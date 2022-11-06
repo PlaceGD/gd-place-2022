@@ -29,6 +29,7 @@
 
     let currentMenu = EditorMenu.Build
     let currentEditTab = 0
+    let currentObjectTab = "blocks"
     const switchMenu = (to: EditorMenu) => {
         currentMenu = to
         if (currentMenu == EditorMenu.Delete) {
@@ -40,6 +41,12 @@
             pixiApp.editorNode.deselectObject()
         }
     }
+
+    // temporary way of generating categories
+    let categoryList = []
+    OBJECT_SETTINGS.forEach(x => {
+        if (!categoryList.includes(x.category)) categoryList.push(x.category)
+    })
 
     // get editor position from local storage
     let editorPosition: any = localStorage.getItem("editorPosition")
@@ -94,6 +101,15 @@
             }
         }
     })
+
+    function updateObjectCategory(tab: string) {
+        currentObjectTab = tab
+        document.querySelectorAll('.obj_button').forEach(x => {
+            let c = x.getAttribute("data-category")
+            x.setAttribute("style", c != tab ? "display: none !important" : "")
+        })
+    }
+    updateObjectCategory(currentObjectTab)
 
     let fartcock = []
 </script>
@@ -158,7 +174,6 @@
         class="pixi_canvas"
         bind:this={pixiCanvas}
         on:pointerdown={(e) => {
-            console.log("a", e.pointerId)
             fartcock.push(e)
             pixiApp.draggingThresholdReached = false
             pixiApp.dragging = {
@@ -322,15 +337,37 @@
 
             <div class="buttons_panel menu_panel">
                 {#if currentMenu == EditorMenu.Build}
-                    <div class="objects_grid">
+                    <div class="tabs">
+                        {#each categoryList as objectTab}
+                            <button
+                                class="obj_tab_button tab_button invis_button"
+                                on:click={() => {
+                                    updateObjectCategory(objectTab);
+                                }}
+                                style:opacity={currentObjectTab == objectTab
+                                    ? "1"
+                                    : "0.33"}
+                            >
+                                <img
+                                    draggable="false"
+                                    alt=""
+                                    class="obj_tab_icon"
+                                    use:lazyLoad={`gd/objects/main/${OBJECT_SETTINGS.find(x => x.category == objectTab && x.categoryIcon)?.id || 1607}.png`}
+                                />
+                            </button>
+                        {/each}
+                    </div>
+                    <div class="objects_grid" id="objects_list">
                         {#each OBJECT_SETTINGS as objectData}
                             <button
                                 class="obj_button invis_button wiggle_button"
+                                data-category={objectData.category}
+                                data-id={objectData.id}
+                                style={(currentObjectTab != objectData.category) ? "display: none !important" : ""}
                                 id={selectedObject == objectData.id
                                     ? "selected_obj_button"
                                     : ""}
                                 on:click={() => {
-                                    console.log(objectData.id)
                                     selectedObject = objectData.id
                                 }}
                             >
@@ -340,6 +377,10 @@
                                     class="button_icon"
                                     use:lazyLoad={`gd/objects/main/${objectData.id}.png`}
                                 />
+                                {#if objectData.comment}
+                                    <p class="object_comment">{objectData.comment}</p>
+                                {/if}
+                                <p class="debug_objectID object_comment">{objectData.id}</p>
                             </button>
                         {/each}
                     </div>
@@ -359,7 +400,7 @@
                             </button>
                         {/each}
                     </div>
-                    <div class="objects_grid">
+                    <div class="objects_grid" >
                         {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
                             <button
                                 class="edit_button invis_button wiggle_button"
@@ -841,6 +882,13 @@
         font-size: var(--font-small);
     }
 
+    .tab_button .obj_tab_icon {
+        width: 25px;
+        height: 25px;
+        object-fit: contain;
+        vertical-align: middle;
+    }
+
     .edit_info_text {
         font-family: Pusab, Helvetica, sans-serif;
         -webkit-text-stroke: 1.5px black;
@@ -929,11 +977,27 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        position: relative;
     }
 
     #selected_obj_button {
         outline: 3px solid #a2ffa2;
         transform: scale(1.1);
+    }
+
+    .debug_objectID {
+        display: none;
+    }
+
+    .object_comment {
+        font-size: 10px;
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        text-align: left;
+        color: white;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px black;
     }
 
     .edit_button {
