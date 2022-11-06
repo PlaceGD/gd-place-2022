@@ -65,7 +65,7 @@
     let placeButtonDisabled = false
     let deleteButtonDisabled = false
 
-    const timer = 2 * 60
+    const timer = 1 * 60
 
     const updateTimeLeft = () => {
         const now = Date.now()

@@ -1,7 +1,6 @@
 import * as functions from "firebase-functions"
 import * as admin from "firebase-admin"
 import { initializeApp } from "firebase-admin/app"
-import { v5 as uuidv5 } from "uuid"
 
 export * from "./gd"
 
@@ -18,7 +17,7 @@ const LEVEL_BOUNDS = {
 
 initializeApp()
 
-const timer = 2 * 60
+const timer = 1 * 60
 
 export const placeObject = functions.https.onCall(async (data, request) => {
     // check that user is authenticated
@@ -58,11 +57,7 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     let key = await ref.push(object)
 
     // reset timer
-    if (
-        uid != "fSAr1IIsQ6Ndjcn1wzLUanlqbxJ3" &&
-        uid != "R2C8U5ct2rZNif2iaa2CFwhIptA3" &&
-        uid != "bihWD9f3LpWj9Nkf4plcsCEDymZ2"
-    )
+    if (uid != "BwgUjk2rKrQ3h52FrrfBpPc3QMo2")
         // :mabbog:
         await lastPlacedRef.set(now)
 
@@ -109,13 +104,7 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
     ref.remove()
 
     // reset timer
-    if (
-        uid != "fSAr1IIsQ6Ndjcn1wzLUanlqbxJ3" &&
-        uid != "R2C8U5ct2rZNif2iaa2CFwhIptA3" &&
-        uid != "bihWD9f3LpWj9Nkf4plcsCEDymZ2"
-    )
-        // :mabbog:
-        await lastDeletedRef.set(now)
+    if (uid != "BwgUjk2rKrQ3h52FrrfBpPc3QMo2") await lastDeletedRef.set(now)
 
     db.ref(`/userPlaced/${data.objId}`).remove()
 
@@ -146,11 +135,10 @@ export const initUserWithUsername = functions.https.onCall(
 
         // check if /userName/$username exists
 
-        let hash = uuidv5(
-            data.username.toLowerCase(),
-            process.env.USERNAME_SEED || ""
+        const usernameExists = db.ref(
+            `/userName/${data.username.toLowerCase()}`
         )
-        const usernameExists = db.ref(`/userName/${hash}`)
+
         const val = (await usernameExists.get()).val()
         if (val != null) {
             throw new functions.https.HttpsError(
@@ -159,12 +147,6 @@ export const initUserWithUsername = functions.https.onCall(
             )
         }
 
-        usernameExists.set(true)
-
-        const usernameRef = db.ref(`/userName/${data.username}`)
-        const username = (await usernameRef.get()).val()
-        functions.logger.log(`user ${username}`)
-
         // make new user
         db.ref(`/userData/${data.uid}`).set({
             username: data.username,
@@ -172,7 +154,7 @@ export const initUserWithUsername = functions.https.onCall(
             lastDeleted: 0,
         })
 
-        db.ref(`/userName/${data.username}`).set({
+        db.ref(`/userName/${data.username.toLowerCase()}`).set({
             uid: data.uid,
         })
     }

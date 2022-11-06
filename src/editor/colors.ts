@@ -3,7 +3,7 @@ import { x_to_time } from "./app"
 
 let BG_CHANGES = [
     { fade: 0, x: 1, color: [0, 0, 0] },
-    { fade: 3, x: 61, color: [0, 21, 33] },
+    { fade: 3, x: 61, color: [0, 33, 51] },
     { fade: 1, x: 1411, color: [0, 0, 0] },
     { fade: 0.1, x: 1831, color: [143, 22, 43] },
     { fade: 2, x: 2041, color: [0, 0, 0] },
@@ -25,7 +25,7 @@ let BG_CHANGES = [
 ]
 let GROUND_CHANGES = [
     { fade: 0, x: 1, color: [7, 7, 7] },
-    { fade: 3, x: 61, color: [15, 35, 47] },
+    { fade: 3, x: 61, color: [0, 41, 63] },
     { fade: 1, x: 1411, color: [7, 7, 7] },
     { fade: 0.1, x: 1831, color: [93, 21, 25] },
     { fade: 2, x: 2041, color: [7, 7, 7] },

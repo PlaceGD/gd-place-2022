@@ -161,6 +161,11 @@ export class EditorNode extends PIXI.Container {
                 this.selectedObjectNode.detailColor.hex,
                 16
             )
+
+            this.selectedObjectNode.mainSprite().alpha =
+                this.selectedObjectNode.mainColor.opacity
+            this.selectedObjectNode.detailSprite().alpha =
+                this.selectedObjectNode.detailColor.opacity
             this.selectedObjectNode = null
             this.selectedObjectChunk = null
         }
