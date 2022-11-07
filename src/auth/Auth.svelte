@@ -1,5 +1,7 @@
 <script lang="ts">
     import { toast } from "@zerodevx/svelte-toast"
+    import { logEvent } from "firebase/analytics"
+
     import {
         canEdit,
         initUserData,
@@ -10,7 +12,6 @@
         signOut,
         type UserData,
     } from "../firebase/auth"
-
     import { toastErrorTheme, toastSuccessTheme } from "../const"
     import { sendMessage, verifyCode } from "../firebase/init"
 

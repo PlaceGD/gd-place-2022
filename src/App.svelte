@@ -1,5 +1,6 @@
 <script lang="ts">
     import { SvelteToast } from "@zerodevx/svelte-toast"
+    import { logEvent } from "firebase/analytics"
 
     import Auth from "./auth/Auth.svelte"
     import Editor from "./editor/Editor.svelte"

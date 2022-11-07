@@ -509,6 +509,9 @@ function map(number, inMin, inMax, outMin, outMax) {
     return ((number - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin
 }
 
+let userPlacedCache = {}
+let userColorCache = {}
+
 class TooltipNode extends PIXI.Graphics {
     text: PIXI.Text
     nameText: PIXI.Text
@@ -580,18 +583,19 @@ class TooltipNode extends PIXI.Graphics {
                 on.mainSprite().height + 4
             )
         this.currentObject.addChild(highlight)
-
-        get(ref(database, `userPlaced/${on.name}`))
-            .then(async (username) => {
-                // check for color
+        const show = async (username) => {
+            // check for color
+            let color
+            if (userColorCache[username]) {
+                color = userColorCache[username]
+            } else {
                 let colorSnap = await get(
                     ref(
                         database,
-                        `userName/${username.val()?.toLowerCase()}/displayColor`
+                        `userName/${username?.toLowerCase()}/displayColor`
                     )
                 )
 
-                let color
                 if (!colorSnap.exists()) {
                     color = 0xffffff
                 } else {
@@ -601,37 +605,50 @@ class TooltipNode extends PIXI.Graphics {
                         .map((a) => parseInt(a, 16))
                 }
 
-                this.nameText.text = username.val()
-                this.nameText.style.fill = color
+                userColorCache[username] = color
+            }
 
-                this.clear()
+            this.nameText.text = username
+            this.nameText.style.fill = color
 
-                this.nameText.x = this.text.width + padding
+            this.clear()
 
-                this.beginFill(0x000000, 0.7)
-                this.drawRoundedRect(
-                    this.text.x - padding / 2,
-                    this.text.y + this.height / 2 - padding / 2,
-                    this.text.width + this.nameText.width + padding * 2,
-                    Math.max(this.text.height, this.nameText.height) + padding,
-                    5
-                )
+            this.nameText.x = this.text.width + padding
 
-                this.x = on.x - (this.text.width + this.nameText.width) / 2
-                this.y = on.y - (this.height - padding * 2)
+            this.beginFill(0x000000, 0.7)
+            this.drawRoundedRect(
+                this.text.x - padding / 2,
+                this.text.y + this.height / 2 - padding / 2,
+                this.text.width + this.nameText.width + padding * 2,
+                Math.max(this.text.height, this.nameText.height) + padding,
+                5
+            )
 
-                this.endFill()
+            this.x = on.x - (this.text.width + this.nameText.width) / 2
+            this.y = on.y - (this.height - padding * 2)
 
-                this.visible = true
-            })
-            .catch((err) => {
-                console.error(err)
+            this.endFill()
 
-                toast.push(
-                    `Failed to get username! (${err.message})`,
-                    toastErrorTheme
-                )
-            })
+            this.visible = true
+        }
+
+        if (userPlacedCache[on.name]) {
+            show(userPlacedCache[on.name])
+        } else {
+            get(ref(database, `userPlaced/${on.name}`))
+                .then((username) => {
+                    userPlacedCache[on.name] = username.val()
+                    show(username.val())
+                })
+                .catch((err) => {
+                    console.error(err)
+
+                    toast.push(
+                        `Failed to get username! (${err.message})`,
+                        toastErrorTheme
+                    )
+                })
+        }
     }
 }
 

@@ -223,12 +223,14 @@ export class ChunkNode extends PIXI.Container {
         if (TIMELAPSE_MODE) {
             this.loaded = false
         } else if (this.loaded) {
-            this.children.forEach((child) => {
-                child.destroy()
-            })
+            const l = this.children.length
+            for (let i = 0; i < l; i++) {
+                this.children[0].destroy()
+            }
             this.unsub1()
             this.unsub2()
             this.loaded = false
+
             //this.marker.tint = 0xff0000
         }
     }

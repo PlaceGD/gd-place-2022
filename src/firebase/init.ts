@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app"
 import { getDatabase } from "firebase/database"
 import { getAuth } from "firebase/auth"
+import { getAnalytics } from "firebase/analytics"
 
 import { getFunctions, httpsCallable } from "firebase/functions"
 
@@ -23,4 +24,7 @@ export const placeObject = httpsCallable(functions, "placeObject")
 export const deleteObject = httpsCallable(functions, "deleteObject")
 export const sendMessage = httpsCallable(functions, "sendMessage")
 export const verifyCode = httpsCallable(functions, "verifyCode")
-export const initUserWithUsername = httpsCallable(functions, "initUserWithUsername")
+export const initUserWithUsername = httpsCallable(
+    functions,
+    "initUserWithUsername"
+)

@@ -172,7 +172,11 @@ export class EditorApp {
                                         this.editorNode.world.getChildByName(
                                             chunkName
                                         )
-                                    if (chunk.getChildByName(obj_key)) {
+                                    if (
+                                        (chunk as ChunkNode).getChildByName(
+                                            obj_key
+                                        )
+                                    ) {
                                         ;(chunk as ChunkNode).removeObject(
                                             obj_key
                                         )

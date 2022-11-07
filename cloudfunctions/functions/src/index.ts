@@ -1,7 +1,8 @@
 import * as functions from "firebase-functions"
 import * as admin from "firebase-admin"
-import * as objectList from "../../../src/objects.json"
 import { initializeApp } from "firebase-admin/app"
+
+import objects from "./objects.json"
 
 export * from "./gd"
 
@@ -15,6 +16,13 @@ const LEVEL_BOUNDS = {
     start: vec(0, 0),
     end: vec(30 * 3000, 30 * 80),
 }
+
+let idMapping: Record<number, any> = {}
+for (let i in objects) {
+    idMapping[objects[i].id] = i
+}
+
+export const getObjSettings = (id: number) => objects[idMapping[id]]
 
 initializeApp()
 
@@ -99,6 +107,14 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
         )
     }
 
+    // validate data.objId
+    if (!data.objId) {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "Object id not provided"
+        )
+    }
+
     functions.logger.log(`deleteobject ${data.chunkId} ${data.objId}`)
 
     const ref = db.ref(`/chunks/${data.chunkId}/${data.objId}`)
@@ -178,7 +194,7 @@ function validateObject(props: string[]) {
         detailOpacity,
     ] = props
 
-    let foundObject = objectList.default.find(x => x.id == id) // breaks with .default(?)
+    const foundObject: any = getObjSettings(parseInt(id)) // breaks with .default(?)
 
     // check that the id is valid
     if (!foundObject) {
@@ -244,6 +260,15 @@ function validateObject(props: string[]) {
         [mainColor, mainBlending, mainOpacity],
         [detailColor, detailBlending, detailOpacity],
     ].forEach(([color, blending, opacity]) => {
+        if (
+            !foundObject.tintable &&
+            (color != "ffffff" || blending != "0" || opacity != "1")
+        ) {
+            throw new functions.https.HttpsError(
+                "invalid-argument",
+                "Invalid object mainColor"
+            )
+        }
         // check that the mainColor is valid
         if (!/^[0-9a-f]{6}$/i.test(color)) {
             throw new functions.https.HttpsError(

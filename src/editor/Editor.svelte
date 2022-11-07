@@ -1,10 +1,12 @@
 <script lang="ts">
     import { onMount } from "svelte"
+    import { Howl } from "howler"
+    import { pinch } from "svelte-gestures"
+    import { toast } from "@zerodevx/svelte-toast"
 
     import { vec } from "../utils/vector"
     import { DRAGGING_THRESHOLD, EditorApp, storePosState } from "./app"
 
-    import { pinch } from "svelte-gestures"
     import {
         GdColor,
         GDObject,
@@ -15,7 +17,6 @@
     import { lazyLoad } from "../lazyLoad"
     import { addObjectToLevel } from "../firebase/database"
     import { canEdit, currentUserData } from "../firebase/auth"
-    import { toast } from "@zerodevx/svelte-toast"
     import { MAX_ZOOM, MIN_ZOOM, toastErrorTheme } from "../const"
 
     let pixiCanvas: HTMLCanvasElement
@@ -44,7 +45,8 @@
 
     // temporary way of generating categories
     let categoryList = []
-    OBJECT_SETTINGS.forEach(x => {
+    //console.log(OBJECT_SETTINGS)
+    OBJECT_SETTINGS.forEach((x) => {
         if (!categoryList.includes(x.category)) categoryList.push(x.category)
     })
 
@@ -72,6 +74,16 @@
     let placeButtonDisabled = false
     let deleteButtonDisabled = false
 
+    let placeTimerDone = true
+    let placeTimerSound = new Howl({
+        src: ["gd/world/crystal01.ogg"],
+    })
+
+    let deleteTimerDone = true
+    let deleteTimerSound = new Howl({
+        src: ["gd/world/crystal01.ogg"],
+    })
+
     const timer = 1 * 60
 
     const updateTimeLeft = () => {
@@ -97,26 +109,41 @@
             if (typeof value.data != "string" && value.data != null) {
                 lastDeleted = value.data.lastDeleted
                 lastPlaced = value.data.lastPlaced
+                if (timer * 1000 - (Date.now() - lastPlaced) > 0) {
+                    let t = setTimeout(() => {
+                        placeTimerSound.play()
+                        clearTimeout(t)
+                    }, Math.max(timer * 1000 - (Date.now() - lastPlaced), 0))
+                    console.log(
+                        Math.max(timer * 1000 - (Date.now() - lastPlaced), 0)
+                    )
+                }
+
+                if (timer * 1000 - (Date.now() - lastDeleted) > 0) {
+                    let t2 = setTimeout(() => {
+                        deleteTimerSound.play()
+                        clearTimeout(t2)
+                    }, Math.max(timer * 1000 - (Date.now() - lastDeleted), 0))
+                }
+
                 updateTimeLeft()
+                //deleteTimerDone = false
             }
         }
     })
 
     function updateObjectCategory(tab: string) {
         currentObjectTab = tab
-        document.querySelectorAll('.obj_button').forEach(x => {
+        document.querySelectorAll(".obj_button").forEach((x) => {
             let c = x.getAttribute("data-category")
             x.setAttribute("style", c != tab ? "display: none !important" : "")
         })
     }
     updateObjectCategory(currentObjectTab)
-
-    let fartcock = []
 </script>
 
 <svelte:window
     on:pointerup={(e) => {
-        //console.log("z", fartcock.includes(e))
         pixiApp.dragging = null
     }}
     on:pointermove={(e) => {
@@ -157,7 +184,15 @@
                     ) {
                         let obj = pixiApp.editorNode.objectPreview
                         e.preventDefault()
-                        if (obj != null) {
+                        if (
+                            !(
+                                obj == null ||
+                                (["cw_5", "ccw_5"].includes(button["image"]) &&
+                                    getObjSettings(
+                                        pixiApp.editorNode.objectPreview?.id
+                                    ).solid)
+                            )
+                        ) {
                             button.cb(obj)
                             pixiApp.editorNode.updateObjectPreview()
                         }
@@ -174,7 +209,6 @@
         class="pixi_canvas"
         bind:this={pixiCanvas}
         on:pointerdown={(e) => {
-            fartcock.push(e)
             pixiApp.draggingThresholdReached = false
             pixiApp.dragging = {
                 prevCamera: pixiApp.editorNode.cameraPos.clone(),
@@ -226,7 +260,7 @@
                         .plus(vec(15, 15))
                     if (
                         pixiApp.editorNode.objectPreview == null ||
-                        selectedObject != pixiApp.editorNode.objectPreview.id
+                        selectedObject != pixiApp.editorNode.objectPreview?.id
                     ) {
                         pixiApp.editorNode.objectPreview = new GDObject(
                             selectedObject,
@@ -342,7 +376,7 @@
                             <button
                                 class="obj_tab_button tab_button invis_button"
                                 on:click={() => {
-                                    updateObjectCategory(objectTab);
+                                    updateObjectCategory(objectTab)
                                 }}
                                 style:opacity={currentObjectTab == objectTab
                                     ? "1"
@@ -352,7 +386,13 @@
                                     draggable="false"
                                     alt=""
                                     class="obj_tab_icon"
-                                    use:lazyLoad={`gd/objects/main/${OBJECT_SETTINGS.find(x => x.category == objectTab && x.categoryIcon)?.id || 1607}.png`}
+                                    use:lazyLoad={`gd/objects/main/${
+                                        OBJECT_SETTINGS.find(
+                                            (x) =>
+                                                x.category == objectTab &&
+                                                x.categoryIcon
+                                        )?.id || 1607
+                                    }.png`}
                                 />
                             </button>
                         {/each}
@@ -363,7 +403,9 @@
                                 class="obj_button invis_button wiggle_button"
                                 data-category={objectData.category}
                                 data-id={objectData.id}
-                                style={(currentObjectTab != objectData.category) ? "display: none !important" : ""}
+                                style={currentObjectTab != objectData.category
+                                    ? "display: none !important"
+                                    : ""}
                                 id={selectedObject == objectData.id
                                     ? "selected_obj_button"
                                     : ""}
@@ -378,9 +420,13 @@
                                     use:lazyLoad={`gd/objects/main/${objectData.id}.png`}
                                 />
                                 {#if objectData.comment}
-                                    <p class="object_comment">{objectData.comment}</p>
+                                    <p class="object_comment">
+                                        {objectData.comment}
+                                    </p>
                                 {/if}
-                                <p class="debug_objectID object_comment">{objectData.id}</p>
+                                <p class="debug_objectID object_comment">
+                                    {objectData.id}
+                                </p>
                             </button>
                         {/each}
                     </div>
@@ -400,7 +446,7 @@
                             </button>
                         {/each}
                     </div>
-                    <div class="objects_grid" >
+                    <div class="objects_grid">
                         {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
                             <button
                                 class="edit_button invis_button wiggle_button"
@@ -410,7 +456,7 @@
                                         editButton["image"]
                                     ) &&
                                         getObjSettings(
-                                            pixiApp.editorNode.objectPreview.id
+                                            pixiApp.editorNode.objectPreview?.id
                                         ).solid)}
                                 on:click={() => {
                                     if (
@@ -437,7 +483,7 @@
                         <!-- extra buttons -->
                         {#if currentEditTab == 1 && pixiApp.editorNode.objectPreview != null}
                             <t class="edit_info_text">
-                                Z = {pixiApp.editorNode.objectPreview.zOrder}
+                                Z = {pixiApp.editorNode.objectPreview?.zOrder}
                             </t>
                         {/if}
 
@@ -450,15 +496,20 @@
                                 {#each PALETTE as color}
                                     <button
                                         class="edit_button invis_button wiggle_button"
-                                        disabled={pixiApp.editorNode
-                                            .objectPreview == null ||
+                                        disabled={!getObjSettings(
+                                            pixiApp.editorNode.objectPreview?.id
+                                        ).tintable ||
+                                            pixiApp?.editorNode
+                                                ?.objectPreview == null ||
                                             (channel == "Main" &&
-                                                pixiApp.editorNode.objectPreview
-                                                    ?.mainColor.blending &&
+                                                pixiApp?.editorNode
+                                                    ?.objectPreview?.mainColor
+                                                    .blending &&
                                                 color == "000000") ||
                                             (channel == "Detail" &&
-                                                pixiApp.editorNode.objectPreview
-                                                    ?.detailColor.blending &&
+                                                pixiApp?.editorNode
+                                                    ?.objectPreview?.detailColor
+                                                    .blending &&
                                                 color == "000000")}
                                         on:click={() => {
                                             if (
@@ -495,8 +546,11 @@
                                                 ?.detailColor.blending)
                                             ? "border: 2px solid red"
                                             : ""}
-                                        disabled={pixiApp.editorNode
-                                            .objectPreview == null ||
+                                        disabled={!getObjSettings(
+                                            pixiApp.editorNode.objectPreview?.id
+                                        ).tintable ||
+                                            pixiApp.editorNode.objectPreview ==
+                                                null ||
                                             (channel == "Main" &&
                                                 pixiApp.editorNode.objectPreview
                                                     ?.mainColor.hex ==
@@ -545,21 +599,26 @@
                                                       .objectPreview
                                                       ?.detailColor.opacity}
                                             class="opacity_slider"
-                                            disabled={pixiApp?.editorNode
-                                                ?.objectPreview == null}
+                                            disabled={!getObjSettings(
+                                                pixiApp.editorNode.objectPreview
+                                                    ?.id
+                                            ).tintable ||
+                                                pixiApp?.editorNode
+                                                    ?.objectPreview == null}
                                             on:input={(e) => {
                                                 if (
                                                     pixiApp.editorNode
                                                         .objectPreview != null
                                                 ) {
+                                                    const val = e.target
                                                     if (channel == "Main")
                                                         pixiApp.editorNode.objectPreview.mainColor.opacity =
-                                                            e.target.value
+                                                            val.value
                                                     else if (
                                                         channel == "Detail"
                                                     )
                                                         pixiApp.editorNode.objectPreview.detailColor.opacity =
-                                                            e.target.value
+                                                            val.value
 
                                                     pixiApp.editorNode.updateObjectPreview()
                                                 }

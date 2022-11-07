@@ -1,5 +1,5 @@
 import { vec } from "../utils/vector"
-import * as objectList from "../objects.json"
+import objectList from "../objects.json"
 
 export class GdColor {
     constructor(
@@ -129,7 +129,7 @@ export class GDObject {
     }
 }
 
-export const OBJECT_SETTINGS = objectList.default // probably did this wrong but this breaks without .defualt
+export const OBJECT_SETTINGS: any = objectList // probably did this wrong but this breaks without .defualt
 
 let idMapping = {}
 for (let i in OBJECT_SETTINGS) {

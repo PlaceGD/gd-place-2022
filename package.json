@@ -7,7 +7,11 @@
         "dev": "vite --host",
         "build": "vite build",
         "preview": "vite preview",
-        "check": "svelte-check --tsconfig ./tsconfig.json"
+        "check": "svelte-check --tsconfig ./tsconfig.json",
+        "functions": "npm run copy-objects  && cd cloudfunctions && firebase deploy --only functions && cd ..",
+        "host": "npm run copy-objects && cd cloudfunctions && firebase deploy --only hosting && cd ..",
+
+        "copy-objects": "copy .\\src\\objects.json .\\cloudfunctions\\functions\\src\\objects.json"
     },
     "devDependencies": {
         "@sveltejs/vite-plugin-svelte": "^1.0.2",
