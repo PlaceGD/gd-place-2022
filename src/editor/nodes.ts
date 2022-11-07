@@ -152,7 +152,7 @@ export class EditorNode extends PIXI.Container {
     }
     deselectObject() {
         if (this.selectedObjectNode != null) {
-            this.selectedObjectNode.getChildByName("select_box").destroy()
+            this.selectedObjectNode.getChildByName("select_box")?.destroy()
             this.selectedObjectNode.mainSprite().tint = parseInt(
                 this.selectedObjectNode.mainColor.hex,
                 16

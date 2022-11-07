@@ -7,8 +7,13 @@ import { map_range } from "../utils/math"
 
 import { Howl, Howler } from "howler"
 import { getColors } from "./colors"
+import { ChunkNode, CHUNK_SIZE, getHistory } from "../firebase/database"
+import { GDObject } from "./object"
 
 export const DRAGGING_THRESHOLD = 40.0
+
+export const TIMELAPSE_MODE = false
+export const TIMELAPSE_SPEED = 1000 // 1000 seconds per second
 
 export function x_to_time(x) {
     // blocks per second in 1x speed
@@ -90,6 +95,21 @@ export class EditorApp {
         //     sprite.position.x = i;
         //     this.editorNode.addChild(sprite);
         // }
+        let history
+        let historyIndex = 0
+        let timelapseTime
+        let start
+        if (TIMELAPSE_MODE) {
+            // download history
+            ;(async () => {
+                history = Object.values(await getHistory())
+                // sort by timeStamp
+                history.sort((a, b) => a.timeStamp - b.timeStamp)
+                console.log(history[0])
+                timelapseTime = history[0].timeStamp
+                start = Date.now()
+            })()
+        }
 
         this.musicLine = new PIXI.Graphics()
         this.editorNode.addChild(this.musicLine)
@@ -105,6 +125,70 @@ export class EditorApp {
         Howler.volume(0.25)
 
         app.ticker.add((delta) => {
+            if (TIMELAPSE_MODE) {
+                if (history && start && timelapseTime) {
+                    const time =
+                        (Date.now() - start) * TIMELAPSE_SPEED + timelapseTime
+
+                    while (
+                        historyIndex < history.length &&
+                        history[historyIndex].timeStamp < time
+                    ) {
+                        if (
+                            history[historyIndex].hasOwnProperty("placedObject")
+                        ) {
+                            //console.log("placing object")
+                            const obj = GDObject.fromDatabaseString(
+                                history[historyIndex].placedObject
+                            )
+                            let chunkX = Math.floor(obj.x / CHUNK_SIZE.x)
+                            let chunkY = Math.floor(obj.y / CHUNK_SIZE.y)
+                            const chunk = `${chunkX},${chunkY}`
+                            //console.log(chunk)
+                            ;(
+                                this.editorNode.world.getChildByName(
+                                    chunk
+                                ) as ChunkNode
+                            ).addObject(history[historyIndex].key, obj)
+                        } else {
+                            //console.log("removing object")
+                            const obj_key = history[historyIndex].key
+                            // look for object all chunks
+                            for (
+                                let x = LEVEL_BOUNDS.start.x;
+                                x <= LEVEL_BOUNDS.end.x;
+                                x += CHUNK_SIZE.x
+                            ) {
+                                let broken = false
+                                for (
+                                    let y = LEVEL_BOUNDS.start.y;
+                                    y <= LEVEL_BOUNDS.end.y;
+                                    y += CHUNK_SIZE.y
+                                ) {
+                                    const i = x / 20 / 30
+                                    const j = y / 20 / 30
+                                    const chunkName = `${i},${j}`
+                                    const chunk =
+                                        this.editorNode.world.getChildByName(
+                                            chunkName
+                                        )
+                                    if (chunk.getChildByName(obj_key)) {
+                                        ;(chunk as ChunkNode).removeObject(
+                                            obj_key
+                                        )
+                                        broken = true
+                                        break
+                                    }
+                                }
+                                if (broken) {
+                                    break
+                                }
+                            }
+                        }
+                        historyIndex++
+                    }
+                }
+            }
             center.position.x = app.screen.width / 2
             center.position.y = app.screen.height / 2
 

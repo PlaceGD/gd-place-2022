@@ -18,6 +18,7 @@ import { EditorNode, LEVEL_BOUNDS, ObjectNode } from "../editor/nodes"
 import { database, deleteObject, placeObject } from "./init"
 import { vec } from "../utils/vector"
 import { canEdit } from "./auth"
+import { TIMELAPSE_MODE } from "../editor/app"
 
 export const CHUNK_SIZE = vec(20 * 30, 20 * 30)
 
@@ -25,6 +26,10 @@ let canEditValue = false
 canEdit.subscribe((value) => {
     canEditValue = value
 })
+
+export async function getHistory() {
+    return (await get(ref(database, "history"))).val()
+}
 
 export const initChunkBehavior = (
     editorNode: EditorNode,
@@ -71,8 +76,8 @@ export class ChunkNode extends PIXI.Container {
     unsub1 = null
     unsub2 = null
 
-    public addObject = null
-    public removeObject = null
+    public addObject: (key: string, obj: GDObject) => void = null
+    public removeObject: (key: string) => void = null
 
     public lastTimeVisible: number = 0
     public loaded: boolean = false
@@ -106,15 +111,14 @@ export class ChunkNode extends PIXI.Container {
         this.selectableChunk.name = chunkName
         selectableWorldNode.addChild(this.selectableChunk)
 
-        this.addObject = (snapshot) => {
-            let obj = GDObject.fromDatabaseString(snapshot.val())
+        this.addObject = (key: string, obj: GDObject) => {
             let objectNode = new ObjectNode(obj, layerGroup, editorNode.tooltip)
-            objectNode.name = snapshot.key
+            objectNode.name = key
 
             this.addChild(objectNode)
 
             let selectableSprite = new PIXI.Sprite(PIXI.Texture.EMPTY)
-            selectableSprite.name = snapshot.key
+            selectableSprite.name = key
             selectableSprite.anchor.set(0.5)
             selectableSprite.alpha = 0.1
             selectableSprite.renderable = false
@@ -165,36 +169,47 @@ export class ChunkNode extends PIXI.Container {
             })
         }
 
-        this.removeObject = (snapshot) => {
-            console.log(this.name, "removed object")
+        this.removeObject = (key: string) => {
+            //console.log(this.name, "removed object")
             if (
                 editorNode.selectedObjectChunk == chunkName &&
-                editorNode.selectedObjectNode.name == snapshot.key
+                editorNode.selectedObjectNode.name == key
             ) {
                 editorNode.deselectObject()
             }
             //console.log(this.getChildByName(snapshot.key)) // this.getChildByName(snapshot.key).destroy()
-            this.destroyObject(snapshot.key)
+            this.destroyObject(key)
         }
 
         this.load = () => {
-            if (this.children.length > 0) {
-                this.children.forEach((child) => {
-                    child.destroy()
-                })
-            }
-            if (!this.loaded) {
-                this.unsub1 = onChildAdded(
-                    ref(database, `chunks/${chunkName}`),
-                    this.addObject
-                )
-                this.unsub2 = onChildRemoved(
-                    ref(database, `chunks/${chunkName}`),
-                    this.removeObject
-                )
-
+            if (TIMELAPSE_MODE) {
                 this.loaded = true
-                //this.marker.tint = 0x00ff00
+            } else {
+                if (this.children.length > 0) {
+                    this.children.forEach((child) => {
+                        child.destroy()
+                    })
+                }
+                if (!this.loaded) {
+                    this.unsub1 = onChildAdded(
+                        ref(database, `chunks/${chunkName}`),
+                        (snapshot) => {
+                            this.addObject(
+                                snapshot.key,
+                                GDObject.fromDatabaseString(snapshot.val())
+                            )
+                        }
+                    )
+                    this.unsub2 = onChildRemoved(
+                        ref(database, `chunks/${chunkName}`),
+                        (snapshot) => {
+                            this.removeObject(snapshot.key)
+                        }
+                    )
+
+                    this.loaded = true
+                    //this.marker.tint = 0x00ff00
+                }
             }
         }
     }
@@ -205,7 +220,9 @@ export class ChunkNode extends PIXI.Container {
     }
 
     unload() {
-        if (this.loaded) {
+        if (TIMELAPSE_MODE) {
+            this.loaded = false
+        } else if (this.loaded) {
             this.children.forEach((child) => {
                 child.destroy()
             })
