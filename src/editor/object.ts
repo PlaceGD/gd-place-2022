@@ -136,4 +136,5 @@ for (let i in OBJECT_SETTINGS) {
     idMapping[OBJECT_SETTINGS[i].id] = i
 }
 
-export const getObjSettings = (id: number) => OBJECT_SETTINGS[idMapping[id]]
+export const getObjSettings = (id: number) =>
+    (id && OBJECT_SETTINGS[idMapping[id]]) || {}

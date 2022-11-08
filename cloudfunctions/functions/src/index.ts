@@ -51,6 +51,8 @@ export const placeObject = functions.https.onCall(async (data, request) => {
         )
     }
 
+    // get object limit and object count
+
     functions.logger.log(`placeObject ${data}`)
 
     const object = data.text
@@ -61,6 +63,17 @@ export const placeObject = functions.https.onCall(async (data, request) => {
 
     let chunkX = Math.floor(parseFloat(props[1]) / CHUNK_SIZE.x)
     let chunkY = Math.floor(parseFloat(props[2]) / CHUNK_SIZE.y)
+
+    const [obj_limit, obj_count] = await Promise.all([
+        db.ref("chunkObjectLimit").get(),
+        db.ref(`objectCount/${chunkX},${chunkY}`).get(),
+    ])
+    if (obj_count.val() >= obj_limit.val()) {
+        throw new functions.https.HttpsError(
+            "resource-exhausted",
+            "There are too many objects in this area! maybe delete one instead?"
+        )
+    }
 
     const ref = db.ref(`/chunks/${chunkX},${chunkY}/`)
     let key = await ref.push(object)
@@ -81,6 +94,11 @@ export const placeObject = functions.https.onCall(async (data, request) => {
         key: key.key,
         placedObject: object,
         timeStamp: now,
+    })
+
+    // add to object count
+    db.ref(`/objectCount/${chunkX},${chunkY}`).transaction((count) => {
+        return (count || 0) + 1
     })
 })
 
@@ -128,7 +146,13 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
     // add to history
     db.ref(`/history`).push({
         key: data.objId,
+        chunk: data.chunkId,
         timeStamp: now,
+    })
+
+    // subtract from object count
+    db.ref(`/objectCount/${data.chunkId}`).transaction((count) => {
+        return count - 1
     })
 })
 

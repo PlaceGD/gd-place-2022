@@ -124,7 +124,7 @@ export class EditorApp {
         // Change global volume.
         Howler.volume(0.25)
 
-        app.ticker.add((delta) => {
+        app.ticker.add(() => {
             if (TIMELAPSE_MODE) {
                 if (history && start && timelapseTime) {
                     const time =

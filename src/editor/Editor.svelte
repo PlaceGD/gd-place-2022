@@ -34,9 +34,9 @@
     const switchMenu = (to: EditorMenu) => {
         currentMenu = to
         if (currentMenu == EditorMenu.Delete) {
+            pixiApp.editorNode.tooltip.visible = false
             pixiApp.editorNode.removePreview()
             pixiApp.editorNode.setObjectsSelectable(true)
-            pixiApp.editorNode.tooltip.visible = false
         } else {
             pixiApp.editorNode.setObjectsSelectable(false)
             pixiApp.editorNode.deselectObject()

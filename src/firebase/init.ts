@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app"
-import { getDatabase } from "firebase/database"
+import { getDatabase, ref, onValue } from "firebase/database"
 import { getAuth } from "firebase/auth"
 import { getAnalytics } from "firebase/analytics"
 
@@ -28,3 +28,5 @@ export const initUserWithUsername = httpsCallable(
     functions,
     "initUserWithUsername"
 )
+export const newView = httpsCallable(functions, "newView")
+export const userViewing = httpsCallable(functions, "userViewing")
