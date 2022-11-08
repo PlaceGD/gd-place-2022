@@ -10,7 +10,6 @@
         "check": "svelte-check --tsconfig ./tsconfig.json",
         "functions": "npm run copy-objects  && cd cloudfunctions && firebase deploy --only functions && cd ..",
         "host": "npm run copy-objects && cd cloudfunctions && firebase deploy --only hosting && cd ..",
-
         "copy-objects": "copy .\\src\\objects.json .\\cloudfunctions\\functions\\src\\objects.json"
     },
     "devDependencies": {
@@ -37,6 +36,7 @@
         "svelte-gestures": "^1.4.1",
         "svelte-skeleton": "^1.3.1",
         "svelte-toast": "^1.0.0",
+        "swiper": "^8.4.4",
         "uuid": "^9.0.0",
         "vite-plugin-full-reload": "^1.0.4"
     }

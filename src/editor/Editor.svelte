@@ -860,6 +860,7 @@
         color: white;
         font-size: calc(var(--font-large) - 6px);
         backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
         text-align: center;
     }
 
@@ -868,6 +869,7 @@
         border-radius: 16px;
         box-shadow: 0 8px 12px 0 #000a;
         backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
     }
 
     .side_panel {
@@ -935,6 +937,7 @@
         border-radius: 16px 16px 0 0;
         margin: 0 8px 0 0;
         backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
         font-family: Pusab, Helvetica, sans-serif;
         -webkit-text-stroke: 1.5px black;
         color: white;
@@ -1183,11 +1186,4 @@
         border-radius: 50%;
         border: 2px solid white;
     }
-
-    /* .big_button img {
-        width: 100%;
-        height: 100%;
-        display: inline;
-        border-image-slice: 18px;
-    } */
 </style>

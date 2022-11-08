@@ -24,6 +24,21 @@ const GROUND_SCALE = (30 * 4.25) / 512
 
 const SPAWN_POS = vec(Math.random() * 30 * 1000, 0)
 
+const BLENDING_SHADER = `
+    varying mediump vec2 vTextureCoord;
+    uniform sampler2D uSampler;
+
+    void main(void) {
+        gl_FragColor = texture2D(uSampler, vTextureCoord);
+        gl_FragColor.r *= gl_FragColor.a;
+        gl_FragColor.g *= gl_FragColor.a;
+        gl_FragColor.b *= gl_FragColor.a;
+    }
+`
+
+const BLENDING_FILTER = new PIXI.Filter(undefined, BLENDING_SHADER)
+BLENDING_FILTER.blendMode = PIXI.BLEND_MODES.ADD
+
 export class EditorNode extends PIXI.Container {
     public zoomLevel: number = 0
     public cameraPos: Vector = vec(0, 0)
@@ -223,34 +238,6 @@ export class EditorNode extends PIXI.Container {
         const box = new PIXI.Graphics()
         box.name = "box"
 
-        this.objectPreview.x = clamp(
-            this.objectPreview.x,
-            LEVEL_BOUNDS.start.x,
-            LEVEL_BOUNDS.end.x
-        )
-        this.objectPreview.y = clamp(
-            this.objectPreview.y,
-            LEVEL_BOUNDS.start.y,
-            LEVEL_BOUNDS.end.y
-        )
-
-        this.objectPreviewNode.setMainColor(this.objectPreview.mainColor)
-        this.objectPreviewNode.setDetailColor(this.objectPreview.detailColor)
-        this.objectPreviewNode.mainSprite().alpha =
-            this.objectPreview.mainColor.opacity
-        this.objectPreviewNode.detailSprite().alpha =
-            this.objectPreview.detailColor.opacity
-
-        this.objectPreviewNode.mainSprite().blendMode = this.objectPreview
-            .mainColor.blending
-            ? PIXI.BLEND_MODES.ADD
-            : PIXI.BLEND_MODES.NORMAL
-
-        this.objectPreviewNode.detailSprite().blendMode = this.objectPreview
-            .detailColor.blending
-            ? PIXI.BLEND_MODES.ADD
-            : PIXI.BLEND_MODES.NORMAL
-
         this.objectPreviewNode.addChild(box)
         this.addChild(this.objectPreviewNode)
     }
@@ -298,6 +285,8 @@ export class EditorNode extends PIXI.Container {
         this.addChild(new PIXI_LAYERS.Layer(this.layerGroup))
         let selectableLayerGroup = new PIXI_LAYERS.Group(0, true)
         this.addChild(new PIXI_LAYERS.Layer(selectableLayerGroup))
+
+        // this.layerGroup
 
         this.groundTiling.parentGroup = this.layerGroup
         this.groundTiling.zOrder = 150
@@ -454,6 +443,7 @@ export class ObjectNode extends PIXI.Container {
         detailSprite.anchor.set(0.5)
         detailSprite.scale.set(0.25, -0.25)
         this.parentGroup = layerGroup
+
         this.addChild(detailSprite)
 
         this.update(obj)
@@ -470,13 +460,16 @@ export class ObjectNode extends PIXI.Container {
         if (obj.mainColor.hex) this.setMainColor(obj.mainColor)
         if (obj.detailColor.hex) this.setDetailColor(obj.detailColor)
 
-        if (obj.mainColor.blending)
-            this.mainSprite().blendMode = PIXI.BLEND_MODES.ADD
-        else this.mainSprite().blendMode = PIXI.BLEND_MODES.NORMAL
-
-        if (obj.detailColor.blending)
-            this.detailSprite().blendMode = PIXI.BLEND_MODES.ADD
-        else this.detailSprite().blendMode = PIXI.BLEND_MODES.NORMAL
+        if (obj.mainColor.blending) {
+            this.mainSprite().filters = [BLENDING_FILTER]
+        } else {
+            this.mainSprite().filters = []
+        }
+        if (obj.detailColor.blending) {
+            this.detailSprite().filters = [BLENDING_FILTER]
+        } else {
+            this.detailSprite().filters = []
+        }
 
         if (obj.mainColor.opacity)
             this.mainSprite().alpha = obj.mainColor.opacity

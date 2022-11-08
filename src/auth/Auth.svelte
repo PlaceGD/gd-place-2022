@@ -358,6 +358,7 @@
         height: 100%;
         background-color: #0008;
         backdrop-filter: blur(32px);
+        -webkit-backdrop-filter: blur(32px);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -365,6 +366,7 @@
     .blur_bg {
         background-color: #1113;
         backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
     }
     .login_popup_title {
         font-family: "Cabin", sans-serif;
@@ -464,6 +466,7 @@
         border: 2px solid white;
         background-color: #1113;
         backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         border-radius: 8px;
         font-family: Pusab;
         font-size: 24px;

@@ -2,6 +2,7 @@
     import { SvelteToast } from "@zerodevx/svelte-toast"
 
     import Auth from "./auth/Auth.svelte"
+    import Auth2 from "./auth/Auth2.svelte"
     import Editor from "./editor/Editor.svelte"
     import { currentUserData } from "./firebase/auth"
 </script>
@@ -10,7 +11,8 @@
 
 {#if typeof $currentUserData != "string"}
     <Editor />
-    <Auth loadedUserData={$currentUserData} />
+    <!-- <Auth loadedUserData={$currentUserData} /> -->
+    <Auth2 loadedUserData={$currentUserData} />
 {:else}
     <h1><pre>loading</pre></h1>
 {/if}
