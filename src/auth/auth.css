@@ -5,3 +5,10 @@
     align-items: center;
     justify-content: center;
 }
+
+.disabled_slide {
+    opacity: 0.3;
+}
+.disabled_slide * {
+    pointer-events: none !important;
+}

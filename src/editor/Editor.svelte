@@ -76,12 +76,12 @@
 
     let placeTimerDone = true
     let placeTimerSound = new Howl({
-        src: ["gd/world/crystal01.ogg"],
+        src: ["/gd/world/crystal01.ogg"],
     })
 
     let deleteTimerDone = true
     let deleteTimerSound = new Howl({
-        src: ["gd/world/crystal01.ogg"],
+        src: ["/gd/world/achievement_01.ogg"],
     })
 
     const timer = 1 * 60
@@ -217,28 +217,57 @@
         }}
         on:wheel={(e) => {
             e.preventDefault()
-            if (e.ctrlKey) {
-                let wm = pixiApp.editorNode.toWorld(
-                    pixiApp.mousePos,
-                    pixiApp.canvasSize()
-                )
-                let prevZoom = pixiApp.editorNode.zoom()
-                pixiApp.editorNode.zoomLevel += e.deltaY > 0 ? -1 : 1
-                pixiApp.editorNode.zoomLevel = Math.min(
-                    MIN_ZOOM,
-                    Math.max(MAX_ZOOM, pixiApp.editorNode.zoomLevel)
-                )
-                let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
-                pixiApp.editorNode.cameraPos = wm.plus(
-                    pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
-                )
-            } else if (e.shiftKey) {
-                pixiApp.editorNode.cameraPos.x += e.deltaY
-                pixiApp.editorNode.cameraPos.y -= e.deltaX
-            } else {
-                pixiApp.editorNode.cameraPos.y -= e.deltaY
-                pixiApp.editorNode.cameraPos.x += e.deltaX
-            }
+            // if (e.ctrlKey) {
+            let wm = pixiApp.editorNode.toWorld(
+                pixiApp.mousePos,
+                pixiApp.canvasSize()
+            )
+            let prevZoom = pixiApp.editorNode.zoom()
+            pixiApp.editorNode.zoomLevel += e.deltaY > 0 ? -1 : 1
+            pixiApp.editorNode.zoomLevel = Math.min(
+                MIN_ZOOM,
+                Math.max(MAX_ZOOM, pixiApp.editorNode.zoomLevel)
+            )
+            let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
+            pixiApp.editorNode.cameraPos = wm.plus(
+                pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
+            )
+            // } else if (e.shiftKey) {
+            //     pixiApp.editorNode.cameraPos.x += e.deltaY
+            //     pixiApp.editorNode.cameraPos.y -= e.deltaX
+            // } else {
+            //     pixiApp.editorNode.cameraPos.y -= e.deltaY
+            //     pixiApp.editorNode.cameraPos.x += e.deltaX
+            // }
+            // set editor position to local storage
+            storePosState(pixiApp)
+        }}
+        on:pinch={(e) => {
+            console.log(e)
+            pixiApp.dragging = null
+
+            if (pixiApp.pinching == null)
+                pixiApp.pinching = { prevZoom: pixiApp.editorNode.zoom() }
+
+            e.preventDefault()
+            // if (e.ctrlKey) {
+            let wm = pixiApp.editorNode.toWorld(
+                vec(e.detail.center.x, e.detail.center.y),
+                pixiApp.canvasSize()
+            )
+            let prevZoom = pixiApp.editorNode.zoom()
+            const lin = Math.exp(pixiApp.editorNode.zoomLevel)
+            pixiApp.editorNode.zoomLevel = Math.log(
+                lin * 0.9 + lin * 0.1 * e.detail.scale
+            )
+            pixiApp.editorNode.zoomLevel = Math.min(
+                MIN_ZOOM,
+                Math.max(MAX_ZOOM, pixiApp.editorNode.zoomLevel)
+            )
+            let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
+            pixiApp.editorNode.cameraPos = wm.plus(
+                pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
+            )
 
             // set editor position to local storage
             storePosState(pixiApp)
@@ -289,8 +318,8 @@
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <img
             src={pixiApp?.playingMusic
-                ? "gd/editor/GJ_stopEditorBtn_001.png"
-                : "gd/editor/GJ_playMusicBtn_001.png"}
+                ? "/gd/editor/GJ_stopEditorBtn_001.png"
+                : "/gd/editor/GJ_playMusicBtn_001.png"}
             alt="play music"
             height="75"
             id="music_button"
@@ -317,7 +346,7 @@
                 >
                     <img
                         draggable="false"
-                        src="gd/editor/side/build.svg"
+                        src="/gd/editor/side/build.svg"
                         alt=""
                         class="side_panel_button_icon"
                     />
@@ -339,7 +368,7 @@
                 >
                     <img
                         draggable="false"
-                        src="gd/editor/side/edit.svg"
+                        src="/gd/editor/side/edit.svg"
                         alt=""
                         class="side_panel_button_icon"
                     />
@@ -353,7 +382,7 @@
                 >
                     <img
                         draggable="false"
-                        src="gd/editor/side/delete.svg"
+                        src="/gd/editor/side/delete.svg"
                         alt=""
                         class="side_panel_button_icon"
                     />
@@ -386,7 +415,7 @@
                                     draggable="false"
                                     alt=""
                                     class="obj_tab_icon"
-                                    use:lazyLoad={`gd/objects/main/${
+                                    use:lazyLoad={`/gd/objects/main/${
                                         OBJECT_SETTINGS.find(
                                             (x) =>
                                                 x.category == objectTab &&
@@ -417,7 +446,7 @@
                                     draggable="false"
                                     alt=""
                                     class="button_icon"
-                                    use:lazyLoad={`gd/objects/main/${objectData.id}.png`}
+                                    use:lazyLoad={`/gd/objects/main/${objectData.id}.png`}
                                 />
                                 {#if objectData.comment}
                                     <p class="object_comment">
@@ -475,7 +504,7 @@
                                     style="transform: scale({editButton.scale})"
                                     class="button_icon"
                                     alt=""
-                                    use:lazyLoad={`gd/editor/edit/${editButton["image"]}.png`}
+                                    use:lazyLoad={`/gd/editor/edit/${editButton["image"]}.png`}
                                 />
                             </button>
                         {/each}
@@ -821,10 +850,10 @@
         flex-direction: column;
         justify-content: flex-end;
         align-items: center;
-        position: absolute;
+        position: fixed;
     }
     .editor > canvas {
-        position: absolute;
+        position: fixed;
         width: 100vw;
         height: 100vh;
         display: inline-block;

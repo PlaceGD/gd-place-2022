@@ -95,7 +95,7 @@
         >
             <img
                 draggable="false"
-                src="login/profile_in.png"
+                src="/login/profile_in.png"
                 alt="login button"
             />
         </button>
@@ -118,7 +118,7 @@
         >
             <img
                 draggable="false"
-                src="login/profile_out.png"
+                src="/login/profile_out.png"
                 alt="logout button"
             />
         </button>
@@ -135,7 +135,7 @@
                     loginPopupVisible = false
                 }}
             >
-                <img draggable="false" src="login/back.svg" alt="back arrow" />
+                <img draggable="false" src="/login/back.svg" alt="back arrow" />
             </button>
             <div class="login_popup blur_bg">
                 <div class="login_popup_title">Login/Register</div>
@@ -155,7 +155,7 @@
                         >
                             <img
                                 draggable="false"
-                                src="login/{button.image}"
+                                src="/login/{button.image}"
                                 alt="login provider"
                             />
                             Login with {button.name}
@@ -185,7 +185,7 @@
                     >
                         <img
                             draggable="false"
-                            src="login/check.png"
+                            src="/login/check.png"
                             alt="checkmark"
                             width="50px"
                         />
@@ -205,7 +205,7 @@
                     buttonsDisabled = false
                 }}
             >
-                <img draggable="false" src="login/back.svg" alt="back arrow" />
+                <img draggable="false" src="/login/back.svg" alt="back arrow" />
             </button>
 
             <div class="username_form">
@@ -244,7 +244,7 @@
                 >
                     <img
                         draggable="false"
-                        src="login/check.png"
+                        src="/login/check.png"
                         alt="checkmark"
                         width="50px"
                     />
@@ -264,7 +264,7 @@
                     loginPopupVisible = true
                 }}
             >
-                <img draggable="false" src="login/back.svg" alt="back arrow" />
+                <img draggable="false" src="/login/back.svg" alt="back arrow" />
             </button>
 
             <div class="username_form">
@@ -310,7 +310,7 @@
                 >
                     <img
                         draggable="false"
-                        src="login/check.png"
+                        src="/login/check.png"
                         alt="checkmark"
                         width="50px"
                     />

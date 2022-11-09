@@ -12,7 +12,7 @@
 {#if typeof $currentUserData != "string"}
     <Editor />
     <!-- <Auth loadedUserData={$currentUserData} /> -->
-    <Auth2 loadedUserData={$currentUserData} />
+    <Auth loadedUserData={$currentUserData} />
 {:else}
     <h1><pre>loading</pre></h1>
 {/if}

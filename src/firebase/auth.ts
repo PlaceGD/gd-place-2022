@@ -53,10 +53,7 @@ export const signInGD = (token) => signInWithCustomToken(auth, token)
 export const signOut = () => logOut(auth)
 
 export const initUserData = (uid: string, username: string) => {
-    initUserWithUsername({ uid, username }).catch((err) => {
-        console.log(err)
-        toast.push("Username already taken!", toastErrorTheme)
-    })
+    return initUserWithUsername({ uid, username })
 }
 
 export const canEdit = derived(

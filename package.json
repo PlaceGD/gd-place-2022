@@ -9,7 +9,7 @@
         "preview": "vite preview",
         "check": "svelte-check --tsconfig ./tsconfig.json",
         "functions": "npm run copy-objects  && cd cloudfunctions && firebase deploy --only functions && cd ..",
-        "host": "npm run copy-objects && cd cloudfunctions && firebase deploy --only hosting && cd ..",
+        "host": "npm run copy-objects && vite build && cd cloudfunctions && xcopy ..\\dist .\\public\\ /E && firebase deploy --only hosting && cd ..",
         "copy-objects": "copy .\\src\\objects.json .\\cloudfunctions\\functions\\src\\objects.json"
     },
     "devDependencies": {

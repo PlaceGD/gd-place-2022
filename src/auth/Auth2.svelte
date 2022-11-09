@@ -1,5 +1,6 @@
 <script lang="ts">
     import { Swiper, SwiperSlide } from "swiper/svelte"
+    import type { Swiper as SwiperType } from "swiper"
     import { toast } from "@zerodevx/svelte-toast"
 
     import { toastErrorTheme, toastSuccessTheme } from "../const"
@@ -8,98 +9,128 @@
         canEdit,
         signOut,
         signInGoogle,
+        initUserData,
+        signInGithub,
+        currentUserData,
     } from "../firebase/auth"
 
     import "swiper/css"
     import "./auth.css"
+    import type { User } from "firebase/auth"
 
     export let loadedUserData: UserData | null
 
-    let swiper
+    let swiper: SwiperType
     let swiperSlides
     let loginPopupVisible = false
 
-    let loginWithGd = false
+    let showLoader = false
 
-    // let test = false
+    const swiperPages = {
+        0: {
+            insertAt: () => 0,
+            show: () => loadedUserData == null,
+        },
+        1: {
+            insertAt: () => swiper.activeIndex + 1,
+            show: () => {
+                console.log(loadedUserData, $canEdit)
 
-    // const swiperPages = {
-    //     0: {
-    //         insertAt: () => 0,
-    //         //show: (swiper) => swiper.activeIndex == 0 && loadedUserData == null,
-    //         show: () => true,
-    //     },
-    //     1: {
-    //         insertAt: () => swiper.activeIndex + 1,
-    //         //show: (swiper) => swiper.activeIndex == 1 && loadedUserData != null, // && !$canEdit,
-    //         show: () => test,
-    //     },
-    //     2: {
-    //         insertAt: () => swiper.activeIndex + 2,
-    //         show: () => test,
-    //     },
-    //     // 3: {
-    //     //     insertAt: () => swiper.activeIndex + 3,
-    //     //     //show: (swiper) => swiper.activeIndex == 1 && loadedUserData != null, // && !$canEdit,
-    //     //     show: () => false,
-    //     // },
-    //     // 4: {
-    //     //     insertAt: () => swiper.activeIndex + 2,
-    //     //     //show: (swiper) => swiper.activeI ndex == 1 && loadedUserData != null, // && !$canEdit,
-    //     //     show: () => false,
-    //     // },
-    // }
+                return (
+                    loadedUserData != null && !$canEdit && !loadedUserData.data
+                )
+            },
+        },
+    }
 
-    // const updateSlides = (firstLoad: boolean = false) => {
-    //     swiperSlides.forEach((slide, i) => {
-    //         if (!swiperPages[i].show()) {
-    //             slide.classList.remove("swiper-slide")
-    //             slide.style.display = "none"
-    //         } else {
-    //             slide.classList.add("swiper-slide")
-    //             slide.style.display = "flex"
+    // so jank but cant store elements in an array cause no jsx :(
+    const updateSlides = (firstLoad: boolean = false) => {
+        let slides = swiper.wrapperEl
 
-    //             if (!firstLoad) {
-    //                 // remove slide from old position
-    //                 swiper.slides.splice(i, 1)
+        swiperSlides.forEach((slide, i) => {
+            if (!swiperPages[i].show()) {
+                // only wanna make the slides invisible when first loading since if they disappear the nice
+                // slide transition wont play
+                if (firstLoad) {
+                    slide.classList.remove("swiper-slide")
+                    slide.style.display = "none"
+                }
+            } else {
+                // if we dont skip on first call all the visible slides would be duplicated
+                // since they wouldnt have been removed from the array yet
+                if (!firstLoad) {
+                    slide.classList.add("swiper-slide")
+                    slide.style.display = "flex"
 
-    //                 // insert slide at new position
-    //                 swiper.slides.splice(swiperPages[i].insertAt(), 0, slide)
+                    slides.insertBefore(
+                        slide,
+                        slides.children[swiperPages[i].insertAt()]
+                    )
+                }
+            }
+        })
 
-    //                 console.log(i)
-    //             }
-    //         }
-    //     })
-
-    //     swiper.update()
-    // }
+        swiper.update()
+    }
+    const disableCurrentSlide = () => {
+        swiper.slides[swiper.activeIndex].classList.add("disabled_slide")
+        showLoader = true
+    }
+    const enableCurrentSlide = () => {
+        swiper.slides[swiper.activeIndex].classList.remove("disabled_slide")
+        showLoader = false
+    }
+    const slideNextOrFinish = () => {
+        if (swiper.isEnd) {
+            loginPopupVisible = false
+            showLoader = false
+        } else {
+            swiper.slideNext()
+        }
+    }
 
     const logInSuccess = () => {
-        loginPopupVisible = false
-        //buttonsDisabled = false
-
-        toast.push("Login Successful!", toastSuccessTheme)
+        toast.push("Login successful!", toastSuccessTheme)
     }
     const logInFailed = (err) => {
         console.error(err)
-        //buttonsDisabled = false
 
         toast.push("Failed to login!", toastErrorTheme)
+
+        enableCurrentSlide()
     }
+
+    let unsub
 
     const loginButtons = [
         {
             image: "google.svg",
             name: "Google",
             cb: () => {
+                disableCurrentSlide()
                 signInGoogle().then(logInSuccess).catch(logInFailed)
+                unsub = currentUserData.subscribe((user) => {
+                    if (user && typeof user != "string" && user.data) {
+                        unsub()
+                        updateSlides()
+                        slideNextOrFinish()
+                    }
+                })
             },
         },
         {
             image: "github.svg",
             name: "GitHub",
             cb: () => {
-                // signInGithub().then(logInSuccess).catch(logInFailed)
+                disableCurrentSlide()
+                signInGithub().then(logInSuccess).catch(logInFailed)
+                unsub = currentUserData.subscribe((user) => {
+                    if (user && typeof user != "string" && user.data) {
+                        unsub()
+                        updateSlides()
+                        slideNextOrFinish()
+                    }
+                })
             },
         },
         {
@@ -132,7 +163,7 @@
         >
             <img
                 draggable="false"
-                src="login/profile_in.png"
+                src="/login/profile_in.png"
                 alt="login button"
             />
         </button>
@@ -155,7 +186,7 @@
         >
             <img
                 draggable="false"
-                src="login/profile_out.png"
+                src="/login/profile_out.png"
                 alt="logout button"
             />
         </button>
@@ -166,44 +197,130 @@
 
     {#if loginPopupVisible}
         <div class="login_popup_container">
-            <button
-                class="back_button invis_button wiggle_button blur_bg"
-                on:click={async () => {
-                    if (loadedUserData != null) {
-                        signOut().then(() => {
-                            loginPopupVisible = false
-                        })
-                    } else {
+            {#if loadedUserData == null}
+                <button
+                    class="back_button invis_button wiggle_button blur_bg"
+                    on:click={async () => {
                         loginPopupVisible = false
-                    }
-                }}
-            >
-                <img draggable="false" src="login/back.svg" alt="back arrow" />
-            </button>
+                    }}
+                >
+                    <img
+                        draggable="false"
+                        src="login/back.svg"
+                        alt="back arrow"
+                    />
+                </button>
+            {/if}
 
             <div class="login_swiper_container">
+                {#if showLoader}
+                    <div
+                        style="font-family: Cabin; color: white; position: absolute;"
+                    >
+                        LOADING...
+                    </div>
+                {/if}
                 <Swiper
                     slidesPerView={1}
                     centeredSlides={true}
-                    allowTouchMove={true}
+                    allowTouchMove={false}
                     style="width: 100%; height: 100%;"
                     on:swiper={(e) => {
-                        // swiper = e.detail[0]
-                        // console.log(swiper.slides)
-                        // // swiper.slides.forEach((slide, i) => {
-                        // //     swiperPages[i].el = slide
-                        // //     swiper.slides.splice(i, 1)
-                        // // })
-                        // let x = swiper.slides[2]
-                        // swiper.slides[2] = swiper.slides[1]
-                        // swiper.slides[1] = x
-                        // //swiper.slides.splice(0, swiper.slides.length)
-                        // console.log(swiper.slides)
-                        // swiper.update()
-                        // // updateSlides(true)
+                        swiper = e.detail[0]
+
+                        swiperSlides = swiper.slides
+                        updateSlides(true)
+                    }}
+                    on:slideChangeTransitionStart={() => {
+                        showLoader = false
                     }}
                 >
-                    {#if loadedUserData == null}
+                    <SwiperSlide class="login_swiper_slide">
+                        <div class="login_popup">
+                            <div class="login_popup_title">Login/Register</div>
+                            <div class="login_popup_text">
+                                Login/register with one of the following
+                                services (Twitter and Geometry Dash will be
+                                implemented at a later time). After logging in,
+                                you will be able to make a username. We will not
+                                be able to access any of your data, this is just
+                                for authentication.
+                            </div>
+                            <div class="login_popup_icons">
+                                {#each loginButtons as button}
+                                    <button
+                                        disabled={button?.disabled}
+                                        class="login_method_button invis_button"
+                                        on:click={button.cb}
+                                    >
+                                        <img
+                                            draggable="false"
+                                            src="/login/{button.image}"
+                                            alt="{button.name} login provider"
+                                        />
+                                        Login with {button.name}
+                                    </button>
+                                {/each}
+                            </div>
+                        </div>
+                    </SwiperSlide>
+
+                    <SwiperSlide class="login_swiper_slide">
+                        {#if loadedUserData !== null && typeof loadedUserData.data != "string"}
+                            <div class="login_popup">
+                                <div class="login_popup_title">
+                                    Create Username
+                                </div>
+                                <div class="login_popup_text">
+                                    This will be your username other users will
+                                    see. It can only contain alphanumeric
+                                    characters, be of length 3 to 16 characters,
+                                    and must be unique.
+                                </div>
+
+                                <div class="username_form">
+                                    Create your username: <input
+                                        bind:value={usernameInput}
+                                        class="username_input"
+                                        type="text"
+                                    />
+                                    <button
+                                        disabled={!validUsername}
+                                        style:opacity={validUsername
+                                            ? "1"
+                                            : "0.25"}
+                                        class="checkmark_button invis_button wiggle_button"
+                                        on:click={() => {
+                                            disableCurrentSlide()
+
+                                            initUserData(
+                                                loadedUserData.user.uid,
+                                                usernameInput
+                                            )
+                                                .then(() => {
+                                                    loginPopupVisible = false
+                                                })
+                                                .catch((err) => {
+                                                    console.log(err)
+                                                    toast.push(
+                                                        "Username already taken!",
+                                                        toastErrorTheme
+                                                    )
+                                                })
+                                        }}
+                                    >
+                                        <img
+                                            draggable="false"
+                                            src="login/check.png"
+                                            alt="checkmark"
+                                            width="50px"
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+                        {/if}
+                    </SwiperSlide>
+                    <!-- {#if loadedUserData == null}
                         <SwiperSlide class="login_swiper_slide">
                             <div class="login_popup">
                                 <div class="login_popup_title">
@@ -269,7 +386,7 @@
                                 </div>
                             {/if}
                         </SwiperSlide>
-                    {/if}
+                    {/if} -->
                 </Swiper>
             </div>
         </div>
@@ -363,14 +480,16 @@
         color: white;
         margin-bottom: 32px;
         margin-top: 16px;
+        text-align: center;
     }
 
-    .login_text {
+    .login_popup_text {
         font-family: "Cabin", sans-serif;
         font-size: 16px;
         width: 80%;
         color: rgba(255, 255, 255, 0.5);
         margin-bottom: 12px;
+        text-align: center;
     }
 
     .login_popup_icons {
@@ -410,6 +529,46 @@
     }
     .login_method_button:disabled {
         opacity: 0.25;
+    }
+
+    .username_form {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        text-align: center;
+        justify-content: center;
+        align-items: center;
+        font-family: Pusab;
+        font-size: 32px;
+        color: white;
+        gap: 16px;
+    }
+    .username_input {
+        width: 300px;
+        height: 60px;
+        outline: none;
+        border: 2px solid white;
+        background-color: #1113;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: 8px;
+        font-family: Pusab;
+        font-size: 24px;
+        color: white;
+        text-align: center;
+    }
+
+    .username_display {
+        position: absolute;
+        margin-top: 32px;
+        margin-right: 100px;
+        font-family: Pusab;
+        font-size: 32px;
+        color: white;
+        text-align: right;
+        text-shadow: 0 2px 6px #000d;
+        -webkit-text-stroke: 1px black;
     }
 
     .blur_bg {

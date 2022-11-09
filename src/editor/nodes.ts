@@ -253,7 +253,7 @@ export class EditorNode extends PIXI.Container {
         let gridGraph = new PIXI.Graphics()
         this.addChild(gridGraph)
 
-        let obama = new PIXI.Sprite(PIXI.Texture.from("obama.jpg"))
+        let obama = new PIXI.Sprite(PIXI.Texture.from("/obama.jpg"))
         obama.anchor.set(0.5)
         obama.position.set(LEVEL_BOUNDS.end.x, LEVEL_BOUNDS.end.y)
         obama.scale.set(0.01)
@@ -268,7 +268,7 @@ export class EditorNode extends PIXI.Container {
         this.selectableWorld.sortableChildren = true
 
         this.groundTiling = new PIXI.TilingSprite(
-            PIXI.Texture.from("gd/world/ground.png"),
+            PIXI.Texture.from("/gd/world/ground.png"),
             LEVEL_BOUNDS.end.x,
             512 * GROUND_SCALE
         )
@@ -279,7 +279,7 @@ export class EditorNode extends PIXI.Container {
 
         this.addChild(this.groundTiling)
 
-        let groundLine = PIXI.Sprite.from("gd/world/ground_line.png")
+        let groundLine = PIXI.Sprite.from("/gd/world/ground_line.png")
         groundLine.anchor.set(0.5, 1)
         this.addChild(groundLine)
 
@@ -420,7 +420,7 @@ export class ObjectNode extends PIXI.Container {
     ) {
         super()
         let mainSprite = new PIXI.Sprite(
-            PIXI.Texture.from(`gd/objects/main/${obj.id}.png`)
+            PIXI.Texture.from(`/gd/objects/main/${obj.id}.png`)
         )
         mainSprite.interactive = true
 
@@ -456,7 +456,7 @@ export class ObjectNode extends PIXI.Container {
         })
 
         let detailSprite = new PIXI.Sprite(
-            PIXI.Texture.from(`gd/objects/detail/${obj.id}.png`)
+            PIXI.Texture.from(`/gd/objects/detail/${obj.id}.png`)
         )
 
         detailSprite.anchor.set(0.5)
@@ -689,7 +689,7 @@ export class DeleteObjectLabel extends PIXI.Graphics {
 
     constructor(username: string, public spawnPos) {
         super()
-        console.log(username)
+        //console.log(username)
 
         this.init(username)
     }

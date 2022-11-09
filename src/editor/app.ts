@@ -37,6 +37,8 @@ export function storePosState(app: EditorApp) {
 
 export class EditorApp {
     public dragging: null | { prevCamera: Vector; prevMouse: Vector } = null
+    public pinching: null | { prevZoom: number } = null
+
     public draggingThresholdReached: boolean = false
     public mousePos: Vector = vec(0, 0)
     public editorNode: EditorNode
@@ -73,7 +75,7 @@ export class EditorApp {
         app.stage = new PIXI_LAYERS.Stage()
 
         let bgTiling = new PIXI.TilingSprite(
-            PIXI.Texture.from("gd/world/background.png"),
+            PIXI.Texture.from("/gd/world/background.png"),
             2048 * 10,
             2048
         )
@@ -133,7 +135,7 @@ export class EditorApp {
 
         // Setup the new Howl.
         this.music = new Howl({
-            src: ["song.mp3"],
+            src: ["/song.mp3"],
         })
 
         // Change global volume.
