@@ -13,7 +13,7 @@ import { GDObject } from "./object"
 export const DRAGGING_THRESHOLD = 40.0
 
 export const TIMELAPSE_MODE = false
-export const TIMELAPSE_SPEED = 1000 // 1000 seconds per second
+export const TIMELAPSE_SPEED = 500 // 1000 seconds per second
 
 export function x_to_time(x) {
     // blocks per second in 1x speed
@@ -105,7 +105,22 @@ export class EditorApp {
                 history = Object.values(await getHistory())
                 // sort by timeStamp
                 history.sort((a, b) => a.timeStamp - b.timeStamp)
-                console.log(history[0])
+                // make the maximum time between two snapshots 100 seconds
+                //console.log(history)
+                let maxTime = 10000
+
+                let offset = 0
+                for (let i = 1; i < history.length; i++) {
+                    history[i].timeStamp += offset
+                    let lastTime = history[i - 1].timeStamp
+                    let time = history[i].timeStamp
+                    if (time - lastTime > maxTime) {
+                        history[i].timeStamp = lastTime + maxTime
+                        offset += history[i].timeStamp - time
+                    }
+                }
+                //console.log(history)
+
                 timelapseTime = history[0].timeStamp
                 start = Date.now()
             })()

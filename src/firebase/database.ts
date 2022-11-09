@@ -14,7 +14,12 @@ import {
 import * as PIXI from "pixi.js"
 import type * as PIXI_LAYERS from "@pixi/layers"
 import { GDObject } from "../editor/object"
-import { EditorNode, LEVEL_BOUNDS, ObjectNode } from "../editor/nodes"
+import {
+    DeleteObjectLabel,
+    EditorNode,
+    LEVEL_BOUNDS,
+    ObjectNode,
+} from "../editor/nodes"
 import { database, deleteObject, placeObject } from "./init"
 import { vec } from "../utils/vector"
 import { canEdit } from "./auth"
@@ -203,6 +208,12 @@ export class ChunkNode extends PIXI.Container {
                     this.unsub2 = onChildRemoved(
                         ref(database, `chunks/${chunkName}`),
                         (snapshot) => {
+                            editorNode.deleteLabels.addChild(
+                                new DeleteObjectLabel(
+                                    snapshot.val(),
+                                    this.getChildByName(snapshot.key).position
+                                )
+                            )
                             this.removeObject(snapshot.key)
                         }
                     )
@@ -224,14 +235,15 @@ export class ChunkNode extends PIXI.Container {
             this.loaded = false
         } else if (this.loaded) {
             const l = this.children.length
+
             for (let i = 0; i < l; i++) {
                 this.children[0].destroy()
+                this.selectableChunk.children[0].destroy()
             }
+
             this.unsub1()
             this.unsub2()
             this.loaded = false
-
-            //this.marker.tint = 0xff0000
         }
     }
 }

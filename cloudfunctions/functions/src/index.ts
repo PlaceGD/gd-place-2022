@@ -115,8 +115,9 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
 
     // get user last timestamp /userData/$uid/lastDeleted
     const uid = request.auth.uid
-    const lastDeletedRef = db.ref(`/userData/${uid}/lastDeleted`)
-    const lastDeleted = (await lastDeletedRef.once("value")).val()
+    const userDataRef = db.ref(`/userData/${uid}`)
+    const userData = (await userDataRef.once("value")).val()
+    const lastDeleted = userData.lastDeleted
     const now = Date.now()
     if (lastDeleted && now - lastDeleted < (timer - 5) * 1000) {
         throw new functions.https.HttpsError(
@@ -136,13 +137,13 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
     functions.logger.log(`deleteobject ${data.chunkId} ${data.objId}`)
 
     const ref = db.ref(`/chunks/${data.chunkId}/${data.objId}`)
-    ref.remove()
+    ref.set(userData.username).then(() => ref.remove())
 
     // reset timer
-    if (uid != "BwgUjk2rKrQ3h52FrrfBpPc3QMo2") await lastDeletedRef.set(now)
+    if (uid != "BwgUjk2rKrQ3h52FrrfBpPc3QMo2")
+        await db.ref(`/userData/${uid}/lastDeleted`).set(now)
 
     db.ref(`/userPlaced/${data.objId}`).remove()
-
     // add to history
     db.ref(`/history`).push({
         key: data.objId,

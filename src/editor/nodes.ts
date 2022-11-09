@@ -46,6 +46,8 @@ export class EditorNode extends PIXI.Container {
     public objectPreviewNode: ObjectNode | null = null
     public layerGroup: PIXI_LAYERS.Group
 
+    public deleteLabels: PIXI.Container
+
     public selectedObjectNode: ObjectNode | null = null
     public selectedObjectChunk: string | null = null
     public nextSelectionZ: number = -1
@@ -305,6 +307,9 @@ export class EditorNode extends PIXI.Container {
         this.tooltip = new TooltipNode()
         this.addChild(this.tooltip)
 
+        this.deleteLabels = new PIXI.Container()
+        this.addChild(this.deleteLabels)
+
         setInterval(() => {
             this.unloadOffscreenChunks()
         }, 5000)
@@ -328,6 +333,20 @@ export class EditorNode extends PIXI.Container {
             ) {
                 this.updateVisibleChunks(app)
             }
+
+            let to_delete = []
+            this.deleteLabels.children.forEach((label) => {
+                const del = (label as DeleteObjectLabel).update()
+                if (del) {
+                    to_delete.push(label)
+                }
+            })
+
+            //console.log(to_delete)
+
+            to_delete.forEach((label) => {
+                label.destroy()
+            })
 
             groundLine.position.x = this.cameraPos.x
 
@@ -400,17 +419,17 @@ export class ObjectNode extends PIXI.Container {
         tooltip: TooltipNode | null
     ) {
         super()
-        let sprite = new PIXI.Sprite(
+        let mainSprite = new PIXI.Sprite(
             PIXI.Texture.from(`gd/objects/main/${obj.id}.png`)
         )
-        sprite.interactive = true
+        mainSprite.interactive = true
 
-        sprite.anchor.set(0.5)
-        sprite.scale.set(0.25, -0.25)
-        this.parentGroup = layerGroup
-        this.addChild(sprite)
+        mainSprite.anchor.set(0.5)
+        mainSprite.scale.set(0.25, -0.25)
+        mainSprite.parentGroup = layerGroup
+        this.addChild(mainSprite)
 
-        sprite.on("mouseover", () => {
+        mainSprite.on("mouseover", () => {
             this.isHovering = true
 
             let t = setTimeout(() => {
@@ -422,12 +441,12 @@ export class ObjectNode extends PIXI.Container {
             }, 250)
         })
 
-        sprite.on("touchstart", () => {
+        mainSprite.on("touchstart", () => {
             this.isHovering = true
             if (tooltip) tooltip.update(this)
         })
 
-        sprite.on("mouseout", () => {
+        mainSprite.on("mouseout", () => {
             this.isHovering = false
 
             if (tooltip) {
@@ -442,7 +461,7 @@ export class ObjectNode extends PIXI.Container {
 
         detailSprite.anchor.set(0.5)
         detailSprite.scale.set(0.25, -0.25)
-        this.parentGroup = layerGroup
+        detailSprite.parentGroup = layerGroup
 
         this.addChild(detailSprite)
 
@@ -456,19 +475,23 @@ export class ObjectNode extends PIXI.Container {
         }
         this.rotation = -(obj.rotation * Math.PI) / 180.0
         this.position.set(obj.x, obj.y)
-        this.zOrder = obj.zOrder
+
         if (obj.mainColor.hex) this.setMainColor(obj.mainColor)
         if (obj.detailColor.hex) this.setDetailColor(obj.detailColor)
 
         if (obj.mainColor.blending) {
             this.mainSprite().filters = [BLENDING_FILTER]
+            this.mainSprite().zOrder = 120
         } else {
             this.mainSprite().filters = []
+            this.mainSprite().zOrder = obj.zOrder
         }
         if (obj.detailColor.blending) {
             this.detailSprite().filters = [BLENDING_FILTER]
+            this.detailSprite().zOrder = 120
         } else {
             this.detailSprite().filters = []
+            this.detailSprite().zOrder = obj.zOrder
         }
 
         if (obj.mainColor.opacity)
@@ -653,5 +676,100 @@ export class ObjectSelectionRect extends PIXI.Sprite {
         this.scale.y =
             (objNode.mainSprite().texture.height * objNode.scale.y) / 16 / 4
         this.rotation = objNode.rotation
+    }
+}
+
+const DLABEL_ANIM_TIME = 2000
+
+export class DeleteObjectLabel extends PIXI.Graphics {
+    text: PIXI.Text
+    nameText: PIXI.Text
+    public zoom: number = 1
+    spawn_time: number = 0
+
+    constructor(username: string, public spawnPos) {
+        super()
+        console.log(username)
+
+        this.init(username)
+    }
+
+    async init(username: string) {
+        this.spawn_time = Date.now()
+        let color
+        if (userColorCache[username]) {
+            color = userColorCache[username]
+        } else {
+            let colorSnap = await get(
+                ref(
+                    database,
+                    `userName/${username?.toLowerCase()}/displayColor`
+                )
+            )
+
+            if (!colorSnap.exists()) {
+                color = 0xffffff
+            } else {
+                color = colorSnap
+                    .val()
+                    .split(" ")
+                    .map((a) => parseInt(a, 16))
+            }
+
+            userColorCache[username] = color
+        }
+
+        this.text = new PIXI.Text("Deleted by ", {
+            fontFamily: "Cabin",
+            fontSize: 10,
+            fill: [0xffffff],
+            align: "left",
+            dropShadow: true,
+            dropShadowColor: 0x000000,
+            dropShadowBlur: 2,
+            dropShadowDistance: 0,
+        })
+
+        this.text.anchor.set(0, 0.5)
+        //this.text.transform.scale.set(0.8)
+
+        this.nameText = new PIXI.Text(username, {
+            fontFamily: "Cabin",
+            fontSize: 14,
+            fill: color,
+            align: "left",
+            dropShadow: true,
+            dropShadowColor: 0x000000,
+            dropShadowBlur: 2,
+            dropShadowDistance: 0,
+        })
+
+        this.nameText.anchor.set(0, 0.5)
+
+        const full_width = this.text.width + this.nameText.width + 5
+
+        this.text.x = -full_width / 2
+        this.nameText.x = this.text.width - full_width / 2
+        this.x = this.spawnPos.x
+        this.y = this.spawnPos.y
+
+        this.text.resolution = 3
+        this.nameText.resolution = 3
+        this.addChild(this.text)
+        this.addChild(this.nameText)
+
+        this.scale.y *= -1
+    }
+
+    update() {
+        const d = (Date.now() - this.spawn_time) / DLABEL_ANIM_TIME
+        //console.log(d)
+        this.alpha = (1 - d) * 1.25 * (Math.log(d * 5) + 1) // the sput official easing function
+        this.y = this.spawnPos.y + d ** 2 * 30
+
+        if (d > 1) {
+            return true
+        }
+        return false
     }
 }
