@@ -141,7 +141,7 @@ export class EditorNode extends PIXI.Container {
                         this.world.getChildByName(chunkName) as ChunkNode
                     ).lastTimeVisible
                     if (
-                        Date.now() - timestamp > 1000 * 10 &&
+                        Date.now() - timestamp > 1000 * 30 &&
                         (this.world.getChildByName(chunkName) as ChunkNode)
                             .loaded
                     ) {
@@ -253,6 +253,20 @@ export class EditorNode extends PIXI.Container {
         let gridGraph = new PIXI.Graphics()
         this.addChild(gridGraph)
 
+        gridGraph.clear()
+        for (let x = 0; x <= LEVEL_BOUNDS.end.x; x += 30) {
+            gridGraph
+                .lineStyle(1.0 / this.zoom(), 0x000000, 0.35)
+                .moveTo(x, LEVEL_BOUNDS.start.y)
+                .lineTo(x, LEVEL_BOUNDS.end.y)
+        }
+        for (let y = 0; y <= LEVEL_BOUNDS.end.y; y += 30) {
+            gridGraph
+                .lineStyle(1.0 / this.zoom(), 0x000000, 0.35)
+                .moveTo(LEVEL_BOUNDS.start.x, y)
+                .lineTo(LEVEL_BOUNDS.end.x, y)
+        }
+
         let obama = new PIXI.Sprite(PIXI.Texture.from("/obama.jpg"))
         obama.anchor.set(0.5)
         obama.position.set(LEVEL_BOUNDS.end.x, LEVEL_BOUNDS.end.y)
@@ -312,7 +326,7 @@ export class EditorNode extends PIXI.Container {
 
         setInterval(() => {
             this.unloadOffscreenChunks()
-        }, 5000)
+        }, 10000)
 
         app.ticker.add(() => {
             this.cameraPos = this.cameraPos.clamped(
@@ -320,7 +334,7 @@ export class EditorNode extends PIXI.Container {
                 LEVEL_BOUNDS.end
             )
 
-            const prev_values = [this.position.x, this.position.y, this.scale]
+            const prev_values = [this.position.x, this.position.y, this.scale.x]
 
             this.position.x = -this.cameraPos.x * this.zoom()
             this.position.y = -this.cameraPos.y * this.zoom()
@@ -329,9 +343,27 @@ export class EditorNode extends PIXI.Container {
             if (
                 prev_values[0] != this.position.x ||
                 prev_values[1] != this.position.y ||
-                prev_values[2] != this.scale
+                prev_values[2] != this.scale.x
             ) {
                 this.updateVisibleChunks(app)
+            }
+
+            //console.log(this.scale, prev_values[2])
+
+            if (prev_values[2] != this.scale.x) {
+                gridGraph.clear()
+                for (let x = 0; x <= LEVEL_BOUNDS.end.x; x += 30) {
+                    gridGraph
+                        .lineStyle(1.0 / this.zoom(), 0x000000, 0.35)
+                        .moveTo(x, LEVEL_BOUNDS.start.y)
+                        .lineTo(x, LEVEL_BOUNDS.end.y)
+                }
+                for (let y = 0; y <= LEVEL_BOUNDS.end.y; y += 30) {
+                    gridGraph
+                        .lineStyle(1.0 / this.zoom(), 0x000000, 0.35)
+                        .moveTo(LEVEL_BOUNDS.start.x, y)
+                        .lineTo(LEVEL_BOUNDS.end.x, y)
+                }
             }
 
             let to_delete = []
@@ -349,20 +381,6 @@ export class EditorNode extends PIXI.Container {
             })
 
             groundLine.position.x = this.cameraPos.x
-
-            gridGraph.clear()
-            for (let x = 0; x <= LEVEL_BOUNDS.end.x; x += 30) {
-                gridGraph
-                    .lineStyle(1.0 / this.zoom(), 0x000000, 0.35)
-                    .moveTo(x, LEVEL_BOUNDS.start.y)
-                    .lineTo(x, LEVEL_BOUNDS.end.y)
-            }
-            for (let y = 0; y <= LEVEL_BOUNDS.end.y; y += 30) {
-                gridGraph
-                    .lineStyle(1.0 / this.zoom(), 0x000000, 0.35)
-                    .moveTo(LEVEL_BOUNDS.start.x, y)
-                    .lineTo(LEVEL_BOUNDS.end.x, y)
-            }
 
             obama.rotation += 0.01
             obama.skew.x += 0.001
@@ -398,7 +416,6 @@ export class EditorNode extends PIXI.Container {
     zoom() {
         return 2 ** (this.zoomLevel / 8)
     }
-
 
     toWorld(v: Vector, screenSize: Vector) {
         let pos = v.minus(screenSize.div(2)).div(this.zoom())
@@ -444,7 +461,23 @@ export class ObjectNode extends PIXI.Container {
 
         mainSprite.on("touchstart", () => {
             this.isHovering = true
-            if (tooltip) tooltip.update(this)
+
+            let t = setTimeout(() => {
+                if (this.isHovering && tooltip) {
+                    tooltip.update(this)
+                }
+
+                clearTimeout(t)
+            }, 250)
+        })
+
+        mainSprite.on("touchend", () => {
+            this.isHovering = false
+
+            if (tooltip) {
+                tooltip.visible = false
+                tooltip.unHighlight()
+            }
         })
 
         mainSprite.on("mouseout", () => {
