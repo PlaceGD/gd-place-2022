@@ -19,6 +19,7 @@
     import type { User } from "firebase/auth"
 
     export let loadedUserData: UserData | null
+    $: console.log(loadedUserData)
 
     let swiper: SwiperType
     let swiperSlides
@@ -33,13 +34,8 @@
         },
         1: {
             insertAt: () => swiper.activeIndex + 1,
-            show: () => {
-                console.log(loadedUserData, $canEdit)
-
-                return (
-                    loadedUserData != null && !$canEdit && !loadedUserData.data
-                )
-            },
+            show: () =>
+                loadedUserData != null && !$canEdit && !loadedUserData.data,
         },
     }
 
@@ -109,13 +105,14 @@
             cb: () => {
                 disableCurrentSlide()
                 signInGoogle().then(logInSuccess).catch(logInFailed)
-                unsub = currentUserData.subscribe((user) => {
-                    if (user && typeof user != "string" && user.data) {
-                        unsub()
-                        updateSlides()
-                        slideNextOrFinish()
-                    }
-                })
+                // unsub = currentUserData.subscribe((user) => {
+                //     if (user && typeof user != "string" && user.data) {
+                //         loadedUserData = user
+                //         unsub()
+                //         updateSlides()
+                //         slideNextOrFinish()
+                //     }
+                // })
             },
         },
         {
@@ -124,13 +121,14 @@
             cb: () => {
                 disableCurrentSlide()
                 signInGithub().then(logInSuccess).catch(logInFailed)
-                unsub = currentUserData.subscribe((user) => {
-                    if (user && typeof user != "string" && user.data) {
-                        unsub()
-                        updateSlides()
-                        slideNextOrFinish()
-                    }
-                })
+                // unsub = currentUserData.subscribe((user) => {
+                //     if (user && typeof user != "string" && user.data) {
+                //         loadedUserData = user
+                //         unsub()
+                //         updateSlides()
+                //         slideNextOrFinish()
+                //     }
+                // })
             },
         },
         {

@@ -399,6 +399,7 @@ export class EditorNode extends PIXI.Container {
         return 2 ** (this.zoomLevel / 8)
     }
 
+
     toWorld(v: Vector, screenSize: Vector) {
         let pos = v.minus(screenSize.div(2)).div(this.zoom())
         pos.y *= -1

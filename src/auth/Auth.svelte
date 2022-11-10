@@ -25,9 +25,10 @@
     }
     const logInFailed = (err) => {
         console.error(err)
+        //alert(err)
         buttonsDisabled = false
 
-        toast.push("Failed to login!", toastErrorTheme)
+        toast.push("Failed to log in!", toastErrorTheme)
     }
 
     const loginButtons = [

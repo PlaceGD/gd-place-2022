@@ -18,6 +18,7 @@
     import { addObjectToLevel } from "../firebase/database"
     import { canEdit, currentUserData } from "../firebase/auth"
     import { MAX_ZOOM, MIN_ZOOM, toastErrorTheme } from "../const"
+    import { logEvent } from "firebase/analytics"
 
     let pixiCanvas: HTMLCanvasElement
     export let pixiApp: EditorApp
@@ -242,24 +243,25 @@
             // set editor position to local storage
             storePosState(pixiApp)
         }}
-        on:pinch={(e) => {
-            console.log(e)
+        use:pinch
+        on:pinch={({ detail }) => {
             pixiApp.dragging = null
+            let prevZoom = pixiApp.editorNode.zoom()
 
-            if (pixiApp.pinching == null)
-                pixiApp.pinching = { prevZoom: pixiApp.editorNode.zoom() }
+            if (pixiApp.pinching == null) {
+                pixiApp.pinching = {
+                    prevZoom: pixiApp.editorNode.zoom(),
+                }
+            }
 
-            e.preventDefault()
-            // if (e.ctrlKey) {
+            pixiApp.editorNode.zoomLevel =
+                Math.log2(pixiApp.pinching.prevZoom * detail.scale) * 8
+
             let wm = pixiApp.editorNode.toWorld(
-                vec(e.detail.center.x, e.detail.center.y),
+                vec(detail.center.x, detail.center.y),
                 pixiApp.canvasSize()
             )
-            let prevZoom = pixiApp.editorNode.zoom()
-            const lin = Math.exp(pixiApp.editorNode.zoomLevel)
-            pixiApp.editorNode.zoomLevel = Math.log(
-                lin * 0.9 + lin * 0.1 * e.detail.scale
-            )
+
             pixiApp.editorNode.zoomLevel = Math.min(
                 MIN_ZOOM,
                 Math.max(MAX_ZOOM, pixiApp.editorNode.zoomLevel)
@@ -268,11 +270,11 @@
             pixiApp.editorNode.cameraPos = wm.plus(
                 pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
             )
-
             // set editor position to local storage
             storePosState(pixiApp)
         }}
         on:pointerup={(e) => {
+            pixiApp.pinching = null
             pixiApp.mousePos = vec(e.pageX, e.pageY)
             if (currentMenu == EditorMenu.Delete) {
                 return
