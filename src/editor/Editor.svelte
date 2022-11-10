@@ -141,9 +141,14 @@
         })
     }
     updateObjectCategory(currentObjectTab)
+
+    let portrait = window.innerWidth < window.innerHeight
 </script>
 
 <svelte:window
+    on:resize={() => {
+        portrait = window.innerWidth < window.innerHeight
+    }}
     on:pointerup={(e) => {
         pixiApp.dragging = null
     }}
@@ -338,66 +343,144 @@
 
     {#if $canEdit}
         <div class="menu">
-            <div class="side_panel menu_panel">
-                <button
-                    class="invis_button wiggle_button"
-                    style:opacity={currentMenu == EditorMenu.Build ? 1 : 0.25}
-                    on:click={() => {
-                        switchMenu(EditorMenu.Build)
-                    }}
-                >
-                    <img
-                        draggable="false"
-                        src="/gd/editor/side/build.svg"
-                        alt=""
-                        class="side_panel_button_icon"
-                    />
-                    {#if placeTimeLeft != 0}
-                        <div
-                            class="radial_timer"
-                            style:background={gradientFunc(
-                                1 - placeTimeLeft / timer
-                            )}
-                        />
-                    {/if}
-                </button>
-                <button
-                    class="invis_button wiggle_button"
-                    on:click={() => {
-                        switchMenu(EditorMenu.Edit)
-                    }}
-                    style:opacity={currentMenu == EditorMenu.Edit ? 1 : 0.25}
-                >
-                    <img
-                        draggable="false"
-                        src="/gd/editor/side/edit.svg"
-                        alt=""
-                        class="side_panel_button_icon"
-                    />
-                </button>
-                <button
-                    class="invis_button wiggle_button"
-                    style:opacity={currentMenu == EditorMenu.Delete ? 1 : 0.25}
-                    on:click={() => {
-                        switchMenu(EditorMenu.Delete)
-                    }}
-                >
-                    <img
-                        draggable="false"
-                        src="/gd/editor/side/delete.svg"
-                        alt=""
-                        class="side_panel_button_icon"
-                    />
+            <div
+                class="side_panel menu_panel"
+                style={portrait ? "justify-content: center; margin: 0;" : ""}
+            >
+                {#if portrait}
+                    {#if currentMenu == EditorMenu.Build}
+                        <button
+                            class="invis_button wiggle_button"
+                            on:click={() => {
+                                switchMenu(EditorMenu.Edit)
+                            }}
+                        >
+                            <img
+                                draggable="false"
+                                src="/gd/editor/side/build.svg"
+                                alt=""
+                                class="side_panel_button_icon"
+                            />
+                            {#if placeTimeLeft != 0}
+                                <div
+                                    class="radial_timer"
+                                    style:background={gradientFunc(
+                                        1 - placeTimeLeft / timer
+                                    )}
+                                />
+                            {/if}
+                        </button>
+                    {:else if currentMenu == EditorMenu.Edit}
+                        <button
+                            class="invis_button wiggle_button"
+                            on:click={() => {
+                                switchMenu(EditorMenu.Delete)
+                            }}
+                            style:opacity={currentMenu == EditorMenu.Edit
+                                ? 1
+                                : 0.25}
+                        >
+                            <img
+                                draggable="false"
+                                src="/gd/editor/side/edit.svg"
+                                alt=""
+                                class="side_panel_button_icon"
+                            />
+                        </button>
+                    {:else if currentMenu == EditorMenu.Delete}
+                        <button
+                            class="invis_button wiggle_button"
+                            style:opacity={currentMenu == EditorMenu.Delete
+                                ? 1
+                                : 0.25}
+                            on:click={() => {
+                                switchMenu(EditorMenu.Build)
+                            }}
+                        >
+                            <img
+                                draggable="false"
+                                src="/gd/editor/side/delete.svg"
+                                alt=""
+                                class="side_panel_button_icon"
+                            />
 
-                    {#if deleteTimeLeft != 0}
-                        <div
-                            class="radial_timer"
-                            style:background={gradientFunc(
-                                1 - deleteTimeLeft / timer
-                            )}
-                        />
+                            {#if deleteTimeLeft != 0}
+                                <div
+                                    class="radial_timer"
+                                    style:background={gradientFunc(
+                                        1 - deleteTimeLeft / timer
+                                    )}
+                                />
+                            {/if}
+                        </button>
                     {/if}
-                </button>
+                {:else}
+                    <button
+                        class="invis_button wiggle_button"
+                        style:opacity={currentMenu == EditorMenu.Build
+                            ? 1
+                            : 0.25}
+                        on:click={() => {
+                            switchMenu(EditorMenu.Build)
+                        }}
+                    >
+                        <img
+                            draggable="false"
+                            src="/gd/editor/side/build.svg"
+                            alt=""
+                            class="side_panel_button_icon"
+                        />
+                        {#if placeTimeLeft != 0}
+                            <div
+                                class="radial_timer"
+                                style:background={gradientFunc(
+                                    1 - placeTimeLeft / timer
+                                )}
+                            />
+                        {/if}
+                    </button>
+                    <button
+                        class="invis_button wiggle_button"
+                        on:click={() => {
+                            switchMenu(EditorMenu.Edit)
+                        }}
+                        style:opacity={currentMenu == EditorMenu.Edit
+                            ? 1
+                            : 0.25}
+                    >
+                        <img
+                            draggable="false"
+                            src="/gd/editor/side/edit.svg"
+                            alt=""
+                            class="side_panel_button_icon"
+                        />
+                    </button>
+                    <button
+                        class="invis_button wiggle_button"
+                        style:opacity={currentMenu == EditorMenu.Delete
+                            ? 1
+                            : 0.25}
+                        on:click={() => {
+                            switchMenu(EditorMenu.Delete)
+                        }}
+                    >
+                        <img
+                            draggable="false"
+                            src="/gd/editor/side/delete.svg"
+                            alt=""
+                            class="side_panel_button_icon"
+                        />
+
+                        {#if deleteTimeLeft != 0}
+                            <div
+                                class="radial_timer"
+                                style:background={gradientFunc(
+                                    1 - deleteTimeLeft / timer
+                                )}
+                            />
+                        {/if}
+                    </button>
+                {/if}
             </div>
 
             <div class="buttons_panel menu_panel">
@@ -409,9 +492,9 @@
                                 on:click={() => {
                                     updateObjectCategory(objectTab)
                                 }}
-                                style:opacity={currentObjectTab == objectTab
-                                    ? "1"
-                                    : "0.33"}
+                                style={currentObjectTab == objectTab
+                                    ? "height: 40px;"
+                                    : "height: 32px; margin-top: 8px;"}
                             >
                                 <img
                                     draggable="false"
@@ -466,12 +549,12 @@
                         {#each EDIT_BUTTONS as editTab, i}
                             <button
                                 class="tab_button invis_button"
+                                style={currentEditTab == i
+                                    ? "height: 40px;"
+                                    : "height: 32px; margin-top: 8px;"}
                                 on:click={() => {
                                     currentEditTab = i
                                 }}
-                                style:opacity={currentEditTab == i
-                                    ? "1"
-                                    : "0.5"}
                             >
                                 {editTab.tabName}
                             </button>
@@ -710,7 +793,7 @@
                         class="timer"
                         style="font-size:{placeTimeLeft == 0
                             ? 0
-                            : '70px'};transition: ease-in-out 0.4s; text-align: center"
+                            : 'var(--timer-font)'} !important;transition: ease-in-out 0.4s; text-align: center"
                     >
                         {new Date(placeTimeLeft * 1000)
                             .toISOString()
@@ -745,7 +828,7 @@
                         class="timer"
                         style="font-size:{deleteTimeLeft == 0
                             ? 0
-                            : '70px'};transition: ease-in-out 0.4s;"
+                            : 'var(--timer-font)'} !important;transition: ease-in-out 0.4s;"
                     >
                         {new Date(deleteTimeLeft * 1000)
                             .toISOString()
@@ -775,6 +858,8 @@
         --tab-width: 170px;
 
         --timer-scale: 1;
+
+        --timer-font: 70px;
     }
 
     @media screen and (max-height: 800px) {
@@ -787,6 +872,7 @@
             --timer-scale: 0.678571429;
             --grid-button-size: 50px;
             --grid-gap: 12px;
+            --timer-font: 40px;
         }
     }
 
@@ -801,14 +887,45 @@
             --timer-scale: 0.5;
             --grid-button-size: 35px;
             --grid-gap: 10px;
+            --timer-font: 24px;
         }
     }
 
-    @media screen and (max-width: 900px) {
+    @media screen and (orientation: landscape) and (max-height: 600px) {
+        .menu {
+            grid-template-columns: auto 1fr 20vw !important;
+        }
+
+        .place_button,
+        .delete_button {
+            max-width: 20vw !important;
+        }
+
+        .timer {
+            font-size: 24px !important;
+        }
+
+        .side_panel {
+            transform: translateY(-32px) !important;
+            height: calc(100% + 32px) !important;
+        }
+    }
+
+    .timer {
+        justify-self: center;
+        opacity: 1;
+        /* font-size: var(--font-large); */
+        --webkit-text-stroke: 2px black;
+        text-shadow: 0 0 4px black;
+    }
+
+    @media screen and (orientation: portrait) {
         :root {
             --grid-button-size: 45px;
             --grid-gap: 12px;
             --font-medium: 22px;
+
+            --side-panel-icon-size: 100%;
         }
 
         .menu {
@@ -818,10 +935,13 @@
 
         .side_panel {
             min-width: 80px !important;
+            min-height: 80px !important;
+            grid-row-start: 2 !important;
         }
 
         .buttons_panel {
             min-width: 200px !important;
+            grid-column-start: 1 !important;
         }
 
         .place_button,
@@ -842,7 +962,21 @@
     * {
         -webkit-user-drag: none;
         -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
-        -webkit-overflow-scrolling: touch;
+    }
+
+    ::-webkit-scrollbar {
+        width: 15px;
+        height: 15px;
+    }
+    ::-webkit-scrollbar-thumb {
+        border-radius: 8px;
+        background-color: #c3c3c3;
+        border: 2px solid #eee;
+    }
+
+    ::-webkit-scrollbar-track {
+        -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.2);
+        box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.2);
     }
 
     .editor {
@@ -863,7 +997,7 @@
 
     .menu {
         width: 100%;
-        height: var(--menu-height);
+        height: min(var(--menu-height), 30vh);
         display: grid;
         grid-auto-columns: 1fr;
         grid-template-columns: auto 1fr auto;
@@ -874,6 +1008,9 @@
         column-gap: var(--grid-gap);
         z-index: 10;
         padding: var(--grid-gap);
+
+        position: fixed;
+        bottom: 0;
     }
 
     .login_requirement_message {
@@ -904,7 +1041,7 @@
     }
 
     .side_panel {
-        min-width: 120px;
+        min-width: min(120px, 10vh);
         height: 100%;
         display: flex;
         flex-direction: column;
@@ -933,13 +1070,6 @@
         background: conic-gradient(white 30deg, #000a 30deg 360deg);
     }
 
-    .timer {
-        opacity: 1;
-        font-size: var(--font-large);
-        --webkit-text-stroke: 2px black;
-        text-shadow: 0 0 4px black;
-    }
-
     .buttons_panel {
         width: 100%;
         min-width: 400px;
@@ -953,7 +1083,7 @@
 
     .tabs {
         grid-area: tabs;
-        height: 32px;
+        height: 40px;
         width: calc(100% - 32px);
         position: absolute;
         transform: translateY(-100%);
@@ -964,7 +1094,7 @@
         height: 32px;
         max-width: 250px;
         flex: 1 0 auto;
-        background-color: #000c;
+        background-color: rgba(0, 0, 0, 0.9);
         border-radius: 16px 16px 0 0;
         margin: 0 8px 0 0;
         backdrop-filter: blur(30px);
@@ -973,6 +1103,7 @@
         -webkit-text-stroke: 1.5px black;
         color: white;
         font-size: var(--font-small);
+        transition: 0.2s;
     }
 
     .tab_button .obj_tab_icon {
@@ -1005,9 +1136,10 @@
         grid-template-columns: repeat(auto-fill, var(--grid-button-size));
         justify-content: center;
         padding: var(--grid-gap);
-        gap: 16px;
-        overflow-y: auto;
+        gap: 12px;
+        overflow-y: scroll;
         overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
     }
 
     .delete_menu {
@@ -1018,7 +1150,7 @@
         align-items: center;
         font-family: Pusab, Helvetica, sans-serif;
         color: white;
-        font-size: var(--font-large);
+        font-size: calc(var(--font-medium) * 1.5);
         grid-area: container;
         text-align: center;
         -webkit-text-stroke: 1px black;
