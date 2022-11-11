@@ -1,42 +1,136 @@
 <script lang="ts">
+    import { Swiper, SwiperSlide } from "swiper/svelte"
+    import type { Swiper as SwiperType } from "swiper"
     import { toast } from "@zerodevx/svelte-toast"
-    import { logEvent } from "firebase/analytics"
-
     import {
-        canEdit,
-        initUserData,
-        signInGD,
-        signInGithub,
-        signInGoogle,
-        signInTwitter,
-        signOut,
-        type UserData,
-    } from "../firebase/auth"
+        browserLocalPersistence,
+        setPersistence,
+        type User,
+    } from "firebase/auth"
+    import { get, ref } from "firebase/database"
+
     import { toastErrorTheme, toastSuccessTheme } from "../const"
-    import { sendMessage, verifyCode } from "../firebase/init"
+    import {
+        type UserData,
+        canEdit,
+        signOut,
+        signInGoogle,
+        initUserData,
+        signInGithub,
+        currentUserData,
+        type UserProperties,
+        signInEmailLink,
+    } from "../firebase/auth"
+
+    import { auth, database } from "../firebase/init"
+
+    import "swiper/css"
+    import "./auth.css"
 
     export let loadedUserData: UserData | null
+    let userProperties: UserProperties | null = null
 
-    const logInSuccess = () => {
-        loginPopupVisible = false
-        buttonsDisabled = false
+    let swiper: SwiperType
+    let swiperSlides
+    let loginPopupVisible = false
 
-        toast.push("Login Successful!", toastSuccessTheme)
+    let showLoader = false
+
+    const swiperPages = {
+        0: {
+            show: () => loadedUserData == null,
+        },
+        1: {
+            show: () =>
+                loadedUserData &&
+                (typeof loadedUserData.data === "string" ||
+                    loadedUserData.data === null),
+        },
+    }
+
+    // so jank but cant store elements in an array cause no jsx :(
+    const updateSlides = (firstLoad: boolean = false) => {
+        let slides = swiper.wrapperEl
+
+        swiperSlides.forEach((slide, i) => {
+            if (firstLoad) {
+                swiperPages[i].el = slide
+            }
+            if (!swiperPages[i].show()) {
+                // only wanna make the slides invisible when first loading since if they disappear the nice
+                // slide transition wont play
+                if (firstLoad) {
+                    slide.classList.remove("swiper-slide")
+                    slide.style.display = "none"
+                } else {
+                    if (slides.contains(slide)) {
+                        slides.removeChild(slide)
+                    }
+                }
+            } else {
+                // if we dont skip on first call all the visible slides would be duplicated
+                // since they wouldnt have been removed from the array yet
+                if (!firstLoad) {
+                    slide.classList.add("swiper-slide")
+                    slide.style.display = "flex"
+
+                    if (slides.contains(slide)) {
+                        slides.removeChild(slide)
+                    }
+                    slides.appendChild(slide)
+                }
+            }
+        })
+
+        swiper.update()
+    }
+    const disableCurrentSlide = () => {
+        swiper.slides[swiper.activeIndex].classList.add("disabled_slide")
+        showLoader = true
+    }
+    const enableCurrentSlide = () => {
+        swiper.slides[swiper.activeIndex].classList.remove("disabled_slide")
+        showLoader = false
+    }
+    const slideNextOrFinish = () => {
+        showLoader = false
+
+        if (swiper.slides.length === 0) {
+            setPersistence(auth, browserLocalPersistence)
+            loginPopupVisible = false
+        } else {
+            swiper.slideNext()
+        }
+    }
+
+    const logInSuccess = (user) => {
+        get(ref(database, `userData/${user.user.uid}`))
+            .then((snapshot) => {
+                userProperties = snapshot.val()
+
+                toast.push("Login successful!", toastSuccessTheme)
+
+                updateSlides()
+                slideNextOrFinish()
+            })
+            .catch((err) => {
+                console.error(err)
+            })
     }
     const logInFailed = (err) => {
         console.error(err)
-        //alert(err)
-        buttonsDisabled = false
 
-        toast.push("Failed to log in!", toastErrorTheme)
+        toast.push("Failed to login!", toastErrorTheme)
+
+        enableCurrentSlide()
     }
 
     const loginButtons = [
         {
             image: "google.svg",
             name: "Google",
-            cb: () => {
-                buttonsDisabled = true
+            cb: async () => {
+                disableCurrentSlide()
                 signInGoogle().then(logInSuccess).catch(logInFailed)
             },
         },
@@ -44,7 +138,7 @@
             image: "github.svg",
             name: "GitHub",
             cb: () => {
-                buttonsDisabled = true
+                disableCurrentSlide()
                 signInGithub().then(logInSuccess).catch(logInFailed)
             },
         },
@@ -53,37 +147,22 @@
             image: "twitter.svg",
             name: "Twitter",
             cb: () => {
-                signInTwitter().then(logInSuccess).catch(logInFailed)
+                disableCurrentSlide()
+                //signInTwitter().then(logInSuccess).catch(logInFailed)
             },
         },
         {
             disabled: true,
             image: "gd.png",
             name: "GD",
-            cb: () => {
-                gdUsernamePopupVisible = true
-                loginPopupVisible = false
-            },
+            cb: () => {},
         },
     ]
-
-    let loginPopupVisible = false
-
-    let gdUsernamePopupVisible = false
-    let gdCodePopupVisible = false
-
-    let buttonsDisabled = false
-
-    let uid
 
     let usernameInput = ""
     $: validUsername = usernameInput.match(/^[A-Za-z0-9_-]{3,16}$/)
 
-    let gdUsername = ""
-    $: validGdUsername = gdUsername.match(/^[A-Za-z0-9 ]{3,15}$/)
-
-    let gdCode = ""
-    $: validGdCode = gdCode.match(/^[0-9]{6}$/)
+    let emailInput = window.localStorage.getItem("emailForSignIn") || ""
 </script>
 
 <div class="all">
@@ -128,194 +207,217 @@
         {/if}
     {/if}
 
-    {#if loginPopupVisible && loadedUserData == null}
+    {#if loginPopupVisible}
         <div class="login_popup_container">
-            <button
-                class="back_button invis_button wiggle_button blur_bg"
-                on:click={() => {
-                    loginPopupVisible = false
-                }}
-            >
-                <img draggable="false" src="/login/back.svg" alt="back arrow" />
-            </button>
-            <div class="login_popup blur_bg">
-                <div class="login_popup_title">Login/Register</div>
-                <div class="login_text">
-                    Login/register with one of the following services (Twitter
-                    and Geometry Dash will be implemented at a later time).
-                    After logging in, you will be able to make a username. We
-                    will not be able to access any of your data, this is just
-                    for authentication.
-                </div>
-                <div class="login_popup_icons">
-                    {#each loginButtons as button}
-                        <button
-                            disabled={buttonsDisabled || button?.disabled}
-                            class="login_method_button invis_button"
-                            on:click={button.cb}
-                        >
-                            <img
-                                draggable="false"
-                                src="/login/{button.image}"
-                                alt="login provider"
-                            />
-                            Login with {button.name}
-                        </button>
-                    {/each}
-                </div>
-            </div>
-        </div>
-    {/if}
-
-    {#if loadedUserData != null && !$canEdit}
-        <div class="login_popup_container">
-            {#if typeof loadedUserData.data != "string"}
-                <div class="username_form">
-                    Create your username: <input
-                        bind:value={usernameInput}
-                        class="username_input"
-                        type="text"
+            {#if loadedUserData == null}
+                <button
+                    class="back_button invis_button wiggle_button blur_bg"
+                    on:click={async () => {
+                        loginPopupVisible = false
+                    }}
+                >
+                    <img
+                        draggable="false"
+                        src="login/back.svg"
+                        alt="back arrow"
                     />
-                    <button
-                        disabled={!validUsername}
-                        style:opacity={validUsername ? "1" : "0.25"}
-                        class="checkmark_button invis_button wiggle_button"
-                        on:click={() => {
-                            initUserData(loadedUserData.user.uid, usernameInput)
-                        }}
-                    >
-                        <img
-                            draggable="false"
-                            src="/login/check.png"
-                            alt="checkmark"
-                            width="50px"
-                        />
-                    </button>
-                </div>
+                </button>
             {/if}
-        </div>
-    {/if}
 
-    {#if gdUsernamePopupVisible && !gdCodePopupVisible}
-        <div class="login_popup_container">
-            <button
-                class="back_button invis_button wiggle_button blur_bg"
-                on:click={() => {
-                    loginPopupVisible = true
-                    gdUsernamePopupVisible = false
-                    buttonsDisabled = false
-                }}
-            >
-                <img draggable="false" src="/login/back.svg" alt="back arrow" />
-            </button>
+            <div class="login_swiper_container">
+                {#if showLoader}
+                    <div
+                        style="font-family: Cabin; color: white; position: absolute;"
+                    >
+                        LOADING...
+                    </div>
+                {/if}
+                <Swiper
+                    slidesPerView={1}
+                    centeredSlides={true}
+                    allowTouchMove={false}
+                    style="width: 100%; height: 100%;"
+                    effect="fade"
+                    on:swiper={(e) => {
+                        swiper = e.detail[0]
 
-            <div class="username_form">
-                Enter your Geometry Dash username: <input
-                    bind:value={gdUsername}
-                    class="username_input"
-                    type="text"
-                />
-                <button
-                    disabled={!validGdUsername || buttonsDisabled}
-                    style:opacity={validGdUsername && !buttonsDisabled
-                        ? "1"
-                        : "0.25"}
-                    class="checkmark_button invis_button wiggle_button"
-                    on:click={() => {
-                        buttonsDisabled = true
-
-                        sendMessage({ username: gdUsername })
-                            .then((r) => {
-                                uid = r.data
-
-                                gdCodePopupVisible = true
-                                gdUsernamePopupVisible = false
-                                buttonsDisabled = false
-                            })
-                            .catch((e) => {
-                                console.error(e)
-                                toast.push(
-                                    `Error sending verification code! (${e.message})`,
-                                    toastErrorTheme
-                                )
-
-                                buttonsDisabled = false
-                            })
+                        swiperSlides = swiper.slides
+                        updateSlides(true)
+                    }}
+                    on:slideChangeTransitionStart={() => {
+                        showLoader = false
                     }}
                 >
-                    <img
-                        draggable="false"
-                        src="/login/check.png"
-                        alt="checkmark"
-                        width="50px"
-                    />
-                </button>
-            </div>
-        </div>
-    {/if}
+                    <SwiperSlide class="login_swiper_slide">
+                        <div class="login_popup">
+                            <div class="login_popup_title">Login/Register</div>
+                            <div class="login_popup_text">
+                                Login/register with one of the following
+                                services (Twitter and Geometry Dash will be
+                                implemented at a later time). After logging in,
+                                you will be able to make a username. We will not
+                                be able to access any of your data, this is just
+                                for authentication.
+                            </div>
+                            <div class="login_popup_icons">
+                                {#each loginButtons as button}
+                                    <button
+                                        disabled={button?.disabled}
+                                        class="login_method_button invis_button"
+                                        on:click={button.cb}
+                                    >
+                                        <img
+                                            draggable="false"
+                                            src="/login/{button.image}"
+                                            alt="{button.name} login provider"
+                                        />
+                                        Login with {button.name}
+                                    </button>
+                                {/each}
+                            </div>
 
-    {#if gdCodePopupVisible && !gdUsernamePopupVisible}
-        <div class="login_popup_container">
-            <button
-                class="back_button invis_button wiggle_button blur_bg"
-                on:click={() => {
-                    loginPopupVisible = false
-                    gdCodePopupVisible = false
-                    buttonsDisabled = false
-                    loginPopupVisible = true
-                }}
-            >
-                <img draggable="false" src="/login/back.svg" alt="back arrow" />
-            </button>
+                            <div class="email_password_login">
+                                <div class="email_password_header">
+                                    Or Login/Register with Email
+                                </div>
+                                <input
+                                    class="email_password_input"
+                                    type="email"
+                                    placeholder="Email"
+                                    bind:value={emailInput}
+                                />
+                                <div class="login_register">
+                                    <button
+                                        class="email_password_login_button"
+                                        on:click={() => {
+                                            signInEmailLink(emailInput)
+                                                .then((user) => {
+                                                    localStorage.setItem(
+                                                        "emailForSignIn",
+                                                        emailInput
+                                                    )
 
-            <div class="username_form">
-                Enter the verification code: <input
-                    bind:value={gdCode}
-                    class="username_input"
-                    type="text"
-                />
-                <button
-                    disabled={!validGdCode || buttonsDisabled}
-                    style:opacity={validGdCode && !buttonsDisabled
-                        ? "1"
-                        : "0.25"}
-                    class="checkmark_button invis_button wiggle_button"
-                    on:click={() => {
-                        buttonsDisabled = true
+                                                    const onStorage = (
+                                                        event
+                                                    ) => {
+                                                        if (
+                                                            event.key ==
+                                                            "emailUser"
+                                                        ) {
+                                                            window.removeEventListener(
+                                                                "storage",
+                                                                onStorage
+                                                            )
 
-                        verifyCode({ uid, code: gdCode })
-                            .then((t) => {
-                                signInGD(t)
-                                    .then(() => {
-                                        gdCodePopupVisible = false
-                                        gdUsernamePopupVisible = false
-                                        buttonsDisabled = false
-                                    })
-                                    .catch((err) => {
-                                        console.error(err)
-                                        toast.push(
-                                            `${err.message}`,
-                                            toastErrorTheme
-                                        )
+                                                            let userDataValue =
+                                                                {
+                                                                    user: JSON.parse(
+                                                                        localStorage.getItem(
+                                                                            "emailUser"
+                                                                        )
+                                                                    ),
+                                                                    data: null,
+                                                                }
+                                                            currentUserData.set(
+                                                                userDataValue
+                                                            )
+                                                            localStorage.removeItem(
+                                                                "emailUser"
+                                                            )
 
-                                        buttonsDisabled = false
-                                    })
-                            })
-                            .catch((err) => {
-                                console.error(err)
-                                toast.push(`${err.message}`, toastErrorTheme)
+                                                            logInSuccess(
+                                                                userDataValue
+                                                            )
+                                                        }
+                                                    }
 
-                                buttonsDisabled = false
-                            })
-                    }}
-                >
-                    <img
-                        draggable="false"
-                        src="/login/check.png"
-                        alt="checkmark"
-                        width="50px"
-                    />
-                </button>
+                                                    window.addEventListener(
+                                                        "storage",
+                                                        onStorage
+                                                    )
+
+                                                    toast.push(
+                                                        "Email sent!",
+                                                        toastSuccessTheme
+                                                    )
+                                                })
+                                                .catch((err) => {
+                                                    console.error(err)
+
+                                                    toast.push(
+                                                        "Failed to send email!",
+                                                        toastErrorTheme
+                                                    )
+                                                })
+                                        }}
+                                    >
+                                        Send me a verification email
+                                    </button>
+                                </div>
+                            </div>
+                        </div></SwiperSlide
+                    >
+
+                    <SwiperSlide class="login_swiper_slide">
+                        {#if loadedUserData !== null && typeof loadedUserData.data != "string"}
+                            <div class="login_popup">
+                                <div class="login_popup_title">
+                                    Create Username
+                                </div>
+                                <div class="login_popup_text">
+                                    This will be your username other users will
+                                    see. It can only contain alphanumeric
+                                    characters, be of length 3 to 16 characters,
+                                    and must be unique.
+                                </div>
+
+                                <div class="username_form">
+                                    Enter username: <input
+                                        bind:value={usernameInput}
+                                        class="username_input"
+                                        type="text"
+                                    />
+                                    <button
+                                        disabled={!validUsername}
+                                        style:opacity={validUsername
+                                            ? "1"
+                                            : "0.25"}
+                                        class="checkmark_button invis_button wiggle_button"
+                                        on:click={() => {
+                                            disableCurrentSlide()
+
+                                            initUserData(
+                                                loadedUserData.user.uid,
+                                                usernameInput
+                                            )
+                                                .then((user) => {
+                                                    userProperties = user.data
+
+                                                    updateSlides()
+                                                    slideNextOrFinish()
+                                                })
+                                                .catch((err) => {
+                                                    console.log(err)
+                                                    toast.push(
+                                                        "Username already taken!",
+                                                        toastErrorTheme
+                                                    )
+                                                    enableCurrentSlide()
+                                                })
+                                        }}
+                                    >
+                                        <img
+                                            draggable="false"
+                                            src="login/check.png"
+                                            alt="checkmark"
+                                            width="50px"
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+                        {/if}
+                    </SwiperSlide>
+                </Swiper>
             </div>
         </div>
     {/if}
@@ -329,60 +431,68 @@
         display: flex;
         justify-content: flex-end;
         align-items: flex-start;
-        pointer-events: none;
         z-index: 50;
+        pointer-events: none;
     }
+
     .all * {
         pointer-events: auto;
     }
-    .log_in_out_button {
+
+    .back_button {
         position: absolute;
-        margin-top: 16px;
-        margin-right: 14px;
-    }
-    .username_display {
-        position: absolute;
-        margin-top: 32px;
-        margin-right: 100px;
-        font-family: Pusab;
-        font-size: 32px;
+        top: 8px;
+        left: 8px;
+        width: 70px;
+        height: 50px;
         color: white;
-        text-align: right;
-        text-shadow: 0 2px 6px #000d;
-        -webkit-text-stroke: 1px black;
+        border-radius: 8px;
+        font-family: Cabin;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.1s;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1;
     }
-    .log_in_out_button > img {
-        width: 75px;
-    }
+
     .login_popup_container {
+        position: relative;
         width: 100%;
         height: 100%;
-        background-color: #0008;
+        background-color: #0009;
         backdrop-filter: blur(32px);
         -webkit-backdrop-filter: blur(32px);
         display: flex;
         justify-content: center;
         align-items: center;
     }
-    .blur_bg {
-        background-color: #1113;
+
+    .login_swiper_container {
+        width: min(600px, 90%) !important;
+        height: min(800px, 90%);
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        background-color: #01010199;
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
     }
-    .login_popup_title {
-        font-family: "Cabin", sans-serif;
-        font-size: var(--font-large);
-        color: white;
-        margin-bottom: 32px;
+
+    .log_in_out_button {
+        position: absolute;
         margin-top: 16px;
+        margin-right: 14px;
     }
-    .login_text {
-        font-family: "Cabin", sans-serif;
-        font-size: 16px;
-        width: 80%;
-        color: rgba(255, 255, 255, 0.5);
-        margin-bottom: 12px;
+
+    .log_in_out_button > img {
+        width: 75px;
     }
+
     .login_popup {
         position: absolute;
         width: min(600px, 90%);
@@ -390,18 +500,105 @@
         border-radius: 16px;
         display: flex;
         flex-direction: column;
-        justify-content: center;
+
         align-items: center;
+        overflow-y: hidden;
     }
-    .login_popup_icons {
+
+    .email_password_login {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        height: fit-content;
+        justify-content: center;
+    }
+
+    .login_register {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        margin-top: 0px;
         width: 100%;
         height: 100%;
-        display: grid;
-        grid-template-rows: 1fr 1fr;
-        grid-template-columns: 1fr 1fr;
-        padding: 8px;
-        gap: 8px;
+        justify-content: center;
+        margin: 10px;
+        column-gap: 10px;
     }
+
+    .email_password_login_button {
+        width: 50%;
+        border-radius: 8px;
+        background-color: #00000000;
+        border: 2px solid #bbbbbb;
+        color: white;
+        font-family: Cabin;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.1s;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 15px;
+    }
+
+    .email_password_input {
+        border-radius: 8px;
+        background-color: #00000000;
+        border: 2px solid #bbbbbb;
+        color: white;
+        font-family: Helvetica, sans-serif;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.1s;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 15px;
+        margin: 5px;
+        width: 50%;
+    }
+
+    .login_popup_title {
+        font-family: "Cabin", sans-serif;
+        font-size: var(--font-large);
+        color: white;
+        margin-bottom: 32px;
+        margin-top: 16px;
+        text-align: center;
+    }
+
+    .email_password_header {
+        font-family: "Cabin", sans-serif;
+        font-size: var(--font-medium);
+        color: rgba(255, 255, 255, 0.75);
+        margin-bottom: 24px;
+        margin-top: 24px;
+        text-align: center;
+    }
+
+    .login_popup_text {
+        font-family: "Cabin", sans-serif;
+        font-size: 16px;
+        width: 80%;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 12px;
+        text-align: center;
+        float: top;
+    }
+
+    .login_popup_icons {
+        width: 100%;
+        height: fit-content;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+        gap: 60px;
+        margin-top: 5vh;
+    }
+
     .login_method_button > * {
         width: 60px;
         height: 60px;
@@ -420,6 +617,7 @@
         font-family: Cabin;
         font-size: 16px;
         gap: 16px;
+        padding: 5px;
     }
     .login_method_button:enabled {
         cursor: pointer;
@@ -430,23 +628,7 @@
     .login_method_button:disabled {
         opacity: 0.25;
     }
-    .back_button {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        width: 70px;
-        height: 50px;
-        color: white;
-        border-radius: 8px;
-        font-family: Cabin;
-        font-size: 16px;
-        cursor: pointer;
-        transition: all 0.1s;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1;
-    }
+
     .username_form {
         width: 100%;
         height: 100%;
@@ -473,5 +655,23 @@
         font-size: 24px;
         color: white;
         text-align: center;
+    }
+
+    .username_display {
+        position: absolute;
+        margin-top: 32px;
+        margin-right: 100px;
+        font-family: Pusab;
+        font-size: 32px;
+        color: white;
+        text-align: right;
+        text-shadow: 0 2px 6px #000d;
+        -webkit-text-stroke: 1px black;
+    }
+
+    .blur_bg {
+        background-color: #01010199;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
     }
 </style>

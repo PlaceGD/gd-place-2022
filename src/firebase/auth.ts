@@ -18,42 +18,67 @@ import {
     EmailAuthProvider,
     type AuthProvider,
     TwitterAuthProvider,
+    createUserWithEmailAndPassword,
+    inMemoryPersistence,
+    setPersistence,
+    sendSignInLinkToEmail,
+    browserLocalPersistence,
+    isSignInWithEmailLink,
+    signInWithEmailLink,
+    onIdTokenChanged,
 } from "firebase/auth"
+
 import { get, getDatabase, onValue, ref, set } from "firebase/database"
 import { getFirestore, doc } from "firebase/firestore"
+import type { HttpsCallableResult } from "firebase/functions"
 
 import { toastErrorTheme } from "../const"
 import { derived, writable, type Writable } from "svelte/store"
 import { auth, database, initUserWithUsername } from "./init"
 
+export const isEmailVerification = isSignInWithEmailLink(
+    auth,
+    window.location.href
+)
+
+setPersistence(auth, inMemoryPersistence)
+
 let googleProvider = new GoogleAuthProvider()
 let githubProvider = new GithubAuthProvider()
 let twitterProvider = new TwitterAuthProvider()
+// let emailProvider = new EmailAuthProvider()
 
+export type UserProperties = {
+    username: string
+    lastPlaced: number
+    lastDeleted: number
+}
 export type UserData = {
     user: User
-    data:
-        | {
-              username: string
-              lastPlaced: number
-              lastDeleted: number
-          }
-        | null // no user data
-        | string // user data loading
+    data: UserProperties | null // no user data
 }
 
-export const currentUserData: Writable<UserData | null | string> =
-    writable("loading")
+export const currentUserData: Writable<UserData | null> = writable(null)
 
 export const signInGoogle = () => signInWithPopup(auth, googleProvider)
 export const signInGithub = () => signInWithPopup(auth, githubProvider)
 export const signInTwitter = () => signInWithPopup(auth, twitterProvider)
 export const signInGD = (token) => signInWithCustomToken(auth, token)
 
+const actionCodeSettings = {
+    url: "https://geometrydash-place.web.app",
+    handleCodeInApp: true,
+}
+
+export const signInEmailLink = (email: string) =>
+    sendSignInLinkToEmail(auth, email, actionCodeSettings)
+
 export const signOut = () => logOut(auth)
 
 export const initUserData = (uid: string, username: string) => {
-    return initUserWithUsername({ uid, username })
+    return initUserWithUsername({ uid, username }) as Promise<
+        HttpsCallableResult<UserProperties>
+    >
 }
 
 export const canEdit = derived(
@@ -67,12 +92,12 @@ export const canEdit = derived(
 
 let userDataListener = null
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     if (user != null) {
         console.log("signed in")
         let userDataValue = {
             user,
-            data: "loading",
+            data: null,
         }
 
         currentUserData.set(userDataValue)
@@ -84,6 +109,10 @@ onAuthStateChanged(auth, (user) => {
             (snapshot) => {
                 userDataValue.data = snapshot.val()
                 currentUserData.set(userDataValue)
+
+                if (userDataValue.data !== null) {
+                    setPersistence(auth, browserLocalPersistence)
+                }
             }
         )
     } else {

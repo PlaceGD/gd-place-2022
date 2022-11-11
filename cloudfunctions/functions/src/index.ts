@@ -189,16 +189,20 @@ export const initUserWithUsername = functions.https.onCall(
             )
         }
 
-        // make new user
-        db.ref(`/userData/${data.uid}`).set({
+        let user = {
             username: data.username,
             lastPlaced: 0,
             lastDeleted: 0,
-        })
+        }
+
+        // make new user
+        db.ref(`/userData/${data.uid}`).set(user)
 
         db.ref(`/userName/${data.username.toLowerCase()}`).set({
             uid: data.uid,
         })
+
+        return user
     }
 )
 

@@ -450,6 +450,8 @@ export class ObjectNode extends PIXI.Container {
         mainSprite.on("mouseover", () => {
             this.isHovering = true
 
+            console.log("here")
+
             let t = setTimeout(() => {
                 if (this.isHovering && tooltip) {
                     tooltip.update(this)
@@ -562,6 +564,7 @@ class TooltipNode extends PIXI.Graphics {
     text: PIXI.Text
     nameText: PIXI.Text
     public zoom: number = 1
+    public show: boolean = false
 
     currentObject: ObjectNode | null = null
 
@@ -569,7 +572,7 @@ class TooltipNode extends PIXI.Graphics {
         super()
 
         this.text = new PIXI.Text("Placed By:", {
-            fontFamily: "Cabin",
+            fontFamily: ["Cabin", "sans-serif"],
             fontSize: 12,
             fill: [0xffffff88],
             align: "left",
@@ -579,7 +582,7 @@ class TooltipNode extends PIXI.Graphics {
         //this.text.transform.scale.set(0.8)
 
         this.nameText = new PIXI.Text("", {
-            fontFamily: "Cabin",
+            fontFamily: ["Cabin", "sans-serif"],
             fontSize: 12,
             fill: [0xffffff],
             align: "left",
@@ -597,7 +600,7 @@ class TooltipNode extends PIXI.Graphics {
 
         this.scale.y *= -1
 
-        this.visible = false
+        this.visible = this.show
     }
 
     unHighlight() {
@@ -618,6 +621,7 @@ class TooltipNode extends PIXI.Graphics {
             this.currentObject.getChildByName("highlight")?.destroy()
         this.currentObject = on
         const highlight = new PIXI.Graphics()
+        highlight.visible = this.show
         highlight.name = "highlight"
         highlight.alpha = 0.5
         highlight
@@ -675,7 +679,7 @@ class TooltipNode extends PIXI.Graphics {
 
             this.endFill()
 
-            this.visible = true
+            this.visible = this.show
         }
 
         if (userPlacedCache[on.name]) {
@@ -754,7 +758,7 @@ export class DeleteObjectLabel extends PIXI.Graphics {
         }
 
         this.text = new PIXI.Text("Deleted by ", {
-            fontFamily: "Cabin",
+            fontFamily: ["Cabin", "sans-serif"],
             fontSize: 10,
             fill: [0xffffff],
             align: "left",
@@ -768,7 +772,7 @@ export class DeleteObjectLabel extends PIXI.Graphics {
         //this.text.transform.scale.set(0.8)
 
         this.nameText = new PIXI.Text(username, {
-            fontFamily: "Cabin",
+            fontFamily: ["Cabin", "sans-serif"],
             fontSize: 14,
             fill: color,
             align: "left",

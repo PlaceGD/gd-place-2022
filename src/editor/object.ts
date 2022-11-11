@@ -104,8 +104,8 @@ export class GDObject {
         flipVert: boolean,
         offset: boolean
     ) {
+        const settings = this.settings()
         if (offset) {
-            let settings = this.settings()
             let offVec = vec(settings.offset_x, settings.offset_y).rotated(
                 -(this.rotation * Math.PI) / 180
             )
@@ -121,6 +121,9 @@ export class GDObject {
         if (flipHoriz) {
             this.flip = !this.flip
             this.rotation *= -1
+            if (settings.flipWithoutOffset) {
+                this.x += settings.offset_x * 2
+            }
         }
         if (flipVert) {
             this.flip = !this.flip

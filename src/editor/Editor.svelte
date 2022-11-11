@@ -21,7 +21,7 @@
     import { logEvent } from "firebase/analytics"
 
     let pixiCanvas: HTMLCanvasElement
-    export let pixiApp: EditorApp
+    let pixiApp: EditorApp
 
     enum EditorMenu {
         Build,
@@ -35,12 +35,13 @@
     const switchMenu = (to: EditorMenu) => {
         currentMenu = to
         if (currentMenu == EditorMenu.Delete) {
-            pixiApp.editorNode.tooltip.visible = false
             pixiApp.editorNode.removePreview()
             pixiApp.editorNode.setObjectsSelectable(true)
+            pixiApp.editorNode.tooltip.show = false
         } else {
             pixiApp.editorNode.setObjectsSelectable(false)
             pixiApp.editorNode.deselectObject()
+            pixiApp.editorNode.tooltip.show = true
         }
     }
 
@@ -299,10 +300,12 @@
                     !pixiApp.draggingThresholdReached
                 ) {
                     const settings = getObjSettings(selectedObject)
+
                     let snapped = pixiApp.editorNode
                         .toWorld(pixiApp.mousePos, pixiApp.canvasSize())
                         .snapped(30)
                         .plus(vec(15, 15))
+
                     if (
                         pixiApp.editorNode.objectPreview == null ||
                         selectedObject != pixiApp.editorNode.objectPreview?.id
@@ -319,10 +322,20 @@
                             new GdColor("ffffff", false, 1.0)
                         )
                     } else {
-                        pixiApp.editorNode.objectPreview.x =
-                            snapped.x + settings.offset_x
-                        pixiApp.editorNode.objectPreview.y =
-                            snapped.y + settings.offset_y
+                        const obj = pixiApp.editorNode.objectPreview
+
+                        pixiApp.editorNode.objectPreview.x = snapped.x
+                        pixiApp.editorNode.objectPreview.y = snapped.y
+
+                        let offVec = vec(
+                            settings.offset_x,
+                            settings.offset_y
+                        ).rotated(-(obj.rotation * Math.PI) / 180)
+                        obj.x += offVec.x
+                        obj.y += offVec.y
+                        // offVec = offVec.rotated(-(obj.rotation * Math.PI) / 180)
+                        // obj.x += offVec.x
+                        // obj.y += offVec.y
                     }
                     pixiApp.editorNode.updateObjectPreview()
                 }
@@ -1121,7 +1134,7 @@
         height: 32px;
         max-width: 250px;
         flex: 1 0 auto;
-        background-color: rgba(0, 0, 0, 0.9);
+        background-color: #000c;
         border-radius: 16px 16px 0 0;
         margin: 0 8px 0 0;
         backdrop-filter: blur(30px);
@@ -1240,7 +1253,7 @@
     }
 
     .debug_objectID {
-        display: none;
+        /* display: none; */
     }
 
     .object_comment {
@@ -1363,9 +1376,7 @@
     }
 
     .button_icon {
-        object-fit: contain;
-        max-width: 60%;
-        max-height: 60%;
+        object-fit: fill;
     }
 
     .invis_button {
