@@ -633,7 +633,7 @@
         align-items: center;
         justify-content: center;
         padding: 8px;
-        gap: auto;
+        gap: 20px;
         margin-top: 5vh;
     }
 
@@ -700,7 +700,7 @@
         margin-top: 32px;
         margin-right: 100px;
         font-family: Pusab;
-        font-size: 32px;
+        font-size: var(--font-medium);
         color: white;
         text-align: right;
         text-shadow: 0 2px 6px #000d;

@@ -48,6 +48,7 @@ export class EditorNode extends PIXI.Container {
 
     public deleteLabels: PIXI.Container
 
+    public selectedObjectId: number = 1
     public selectedObjectNode: ObjectNode | null = null
     public selectedObjectChunk: string | null = null
     public nextSelectionZ: number = -1

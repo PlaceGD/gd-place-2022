@@ -15,10 +15,12 @@
     } from "./object"
     import { EDIT_BUTTONS, PALETTE } from "./edit"
     import { lazyLoad } from "../lazyLoad"
-    import { addObjectToLevel } from "../firebase/database"
+    import {
+        addObjectToLevel,
+        updateObjectCategory,
+    } from "../firebase/database"
     import { canEdit, currentUserData } from "../firebase/auth"
     import { MAX_ZOOM, MIN_ZOOM, toastErrorTheme } from "../const"
-    import { logEvent } from "firebase/analytics"
 
     let pixiCanvas: HTMLCanvasElement
     let pixiApp: EditorApp
@@ -31,7 +33,9 @@
 
     let currentMenu = EditorMenu.Build
     let currentEditTab = 0
+
     let currentObjectTab = "blocks"
+
     const switchMenu = (to: EditorMenu) => {
         currentMenu = to
         if (currentMenu == EditorMenu.Delete) {
@@ -76,12 +80,9 @@
     let placeButtonDisabled = false
     let deleteButtonDisabled = false
 
-    let placeTimerDone = true
     let placeTimerSound = new Howl({
         src: ["/gd/world/crystal01.ogg"],
     })
-
-    let deleteTimerDone = true
     let deleteTimerSound = new Howl({
         src: ["/gd/world/achievement_01.ogg"],
     })
@@ -97,8 +98,6 @@
     setInterval(() => {
         updateTimeLeft()
     }, 200)
-
-    let selectedObject = 1
 
     const gradientFunc = (t) =>
         `conic-gradient(white ${t * 360}deg, black ${t * 360}deg 360deg)`
@@ -129,18 +128,10 @@
                 }
 
                 updateTimeLeft()
-                //deleteTimerDone = false
             }
         }
     })
 
-    function updateObjectCategory(tab: string) {
-        currentObjectTab = tab
-        document.querySelectorAll(".obj_button").forEach((x) => {
-            let c = x.getAttribute("data-category")
-            x.setAttribute("style", c != tab ? "display: none !important" : "")
-        })
-    }
     updateObjectCategory(currentObjectTab)
 
     let mobile_screen =
@@ -225,10 +216,12 @@
         class="pixi_canvas"
         bind:this={pixiCanvas}
         on:pointerdown={(e) => {
-            pixiApp.draggingThresholdReached = false
-            pixiApp.dragging = {
-                prevCamera: pixiApp.editorNode.cameraPos.clone(),
-                prevMouse: vec(e.pageX, e.pageY),
+            if (e.button === 0) {
+                pixiApp.draggingThresholdReached = false
+                pixiApp.dragging = {
+                    prevCamera: pixiApp.editorNode.cameraPos.clone(),
+                    prevMouse: vec(e.pageX, e.pageY),
+                }
             }
         }}
         on:wheel={(e) => {
@@ -289,6 +282,11 @@
             storePosState(pixiApp)
         }}
         on:pointerup={(e) => {
+            // middle click
+            if (e.button === 1) {
+                return
+            }
+
             pixiApp.pinching = null
             pixiApp.mousePos = vec(e.pageX, e.pageY)
             if (currentMenu == EditorMenu.Delete) {
@@ -308,7 +306,9 @@
                     pixiApp.dragging == null ||
                     !pixiApp.draggingThresholdReached
                 ) {
-                    const settings = getObjSettings(selectedObject)
+                    const settings = getObjSettings(
+                        pixiApp.editorNode.selectedObjectId
+                    )
 
                     let snapped = pixiApp.editorNode
                         .toWorld(pixiApp.mousePos, pixiApp.canvasSize())
@@ -317,10 +317,11 @@
 
                     if (
                         pixiApp.editorNode.objectPreview == null ||
-                        selectedObject != pixiApp.editorNode.objectPreview?.id
+                        pixiApp.editorNode.selectedObjectId !=
+                            pixiApp.editorNode.objectPreview?.id
                     ) {
                         pixiApp.editorNode.objectPreview = new GDObject(
-                            selectedObject,
+                            pixiApp.editorNode.selectedObjectId,
                             snapped.x + settings.offset_x,
                             snapped.y + settings.offset_y,
                             0,
@@ -380,6 +381,16 @@
                     ? "justify-content: center; margin: 0;"
                     : ""}
             >
+                <div class="side_panel_show_hide">
+                    <button class="invis_button">
+                        <img
+                            draggable="false"
+                            src="/chevrondown.svg"
+                            alt="Close menu"
+                            class="side_panel_button_icon side_panel_show_hide_icon"
+                        />
+                    </button>
+                </div>
                 {#if mobile_screen}
                     <!-- svelte-ignore a11y-click-events-have-key-events -->
                     <div
@@ -540,6 +551,7 @@
                             <button
                                 class="obj_tab_button tab_button invis_button"
                                 on:click={() => {
+                                    currentObjectTab = objectTab
                                     updateObjectCategory(objectTab)
                                 }}
                                 style={currentObjectTab == objectTab
@@ -572,11 +584,13 @@
                                     objectData.category
                                         ? "display: none !important"
                                         : ""}
-                                    id={selectedObject == objectData.id
+                                    id={pixiApp.editorNode.selectedObjectId ==
+                                    objectData.id
                                         ? "selected_obj_button"
                                         : ""}
                                     on:click={() => {
-                                        selectedObject = objectData.id
+                                        pixiApp.editorNode.selectedObjectId =
+                                            objectData.id
                                     }}
                                 >
                                     <img
@@ -822,11 +836,10 @@
                     class="place_button invis_button wiggle_button"
                     disabled={placeButtonDisabled || placeTimeLeft > 0}
                     on:click={() => {
-                        placeButtonDisabled = true
-
                         if (
                             pixiApp.editorNode.objectPreview &&
-                            placeTimeLeft == 0
+                            placeTimeLeft == 0 &&
+                            !placeButtonDisabled
                         ) {
                             addObjectToLevel(pixiApp.editorNode.objectPreview)
                                 .catch((err) => {
@@ -844,6 +857,8 @@
                                     placeButtonDisabled = false
                                 })
                         }
+
+                        placeButtonDisabled = true
                     }}
                 >
                     <div
@@ -872,13 +887,13 @@
                     class="delete_button invis_button wiggle_button"
                     disabled={deleteButtonDisabled || deleteTimeLeft > 0}
                     on:click={() => {
-                        deleteButtonDisabled = true
-
-                        if (deleteTimeLeft == 0) {
+                        if (deleteTimeLeft == 0 && !deleteButtonDisabled) {
                             pixiApp.editorNode.deleteSelectedObject()
 
                             deleteButtonDisabled = false
                         }
+
+                        deleteButtonDisabled = true
                     }}
                 >
                     <div
@@ -1143,6 +1158,23 @@
     .side_panel.menu_panel > button {
         position: relative;
     }
+    .side_panel_show_hide {
+        position: absolute;
+        top: 0;
+        transform: translateY(-100%);
+        height: 40px;
+        background-color: #000c;
+        border-radius: 16px 16px 0 0;
+        width: calc(100% - 32px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+    }
+    .side_panel_show_hide_icon {
+        filter: invert(1);
+    }
 
     .dots {
         display: flex;
@@ -1201,7 +1233,7 @@
         height: 32px;
         max-width: 250px;
         flex: 1 0 auto;
-        background-color: #000e;
+        background-color: #000c;
         border-radius: 16px 16px 0 0;
         margin: 0 8px 0 0;
         font-family: Pusab, Helvetica, sans-serif;
@@ -1209,6 +1241,8 @@
         color: white;
         font-size: var(--font-small);
         transition: 0.2s;
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
     }
 
     .tab_button .obj_tab_icon {

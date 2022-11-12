@@ -1,19 +1,7 @@
-import {
-    getDatabase,
-    ref,
-    onChildAdded,
-    onChildChanged,
-    onChildRemoved,
-    onValue,
-    get,
-    set,
-    push,
-    child,
-    remove,
-} from "firebase/database"
+import { ref, onChildAdded, onChildRemoved, get } from "firebase/database"
 import * as PIXI from "pixi.js"
 import type * as PIXI_LAYERS from "@pixi/layers"
-import { GDObject } from "../editor/object"
+import { GDObject, getObjSettings } from "../editor/object"
 import {
     DeleteObjectLabel,
     EditorNode,
@@ -76,6 +64,13 @@ export const deleteObjectFromLevel = (objName: string, chunkName: string) => {
     return deleteObject({ objId: objName, chunkId: chunkName })
 }
 
+export function updateObjectCategory(newtab) {
+    document.querySelectorAll(".obj_button").forEach((x) => {
+        let c = x.getAttribute("data-category")
+        x.setAttribute("style", c != newtab ? "display: none !important" : "")
+    })
+}
+
 export class ChunkNode extends PIXI.Container {
     public load = null
     unsub1 = null
@@ -119,6 +114,18 @@ export class ChunkNode extends PIXI.Container {
         this.addObject = (key: string, obj: GDObject) => {
             let objectNode = new ObjectNode(obj, layerGroup, editorNode.tooltip)
             objectNode.name = key
+
+            objectNode.interactive = true
+
+            objectNode.on("pointerdown", (e) => {
+                // middle click
+                if (e.data.button === 1) {
+                    editorNode.selectedObjectId = obj.id
+
+                    // find object tab
+                    updateObjectCategory(getObjSettings(obj.id).tab)
+                }
+            })
 
             this.addChild(objectNode)
 
