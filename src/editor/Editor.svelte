@@ -1214,8 +1214,8 @@
     .tab_button .obj_tab_icon {
         width: auto;
         height: auto;
-        max-width: max(20px, 2vw);
-        max-height: max(20px, 2vw);
+        max-width: 5vw;
+        max-height: 80%;
         object-fit: contain;
         vertical-align: middle;
         margin: 3px;

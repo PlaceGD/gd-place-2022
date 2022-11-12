@@ -174,8 +174,8 @@
     { "id": 1759, "offset_x": 10.5,  "offset_y": 9,  "tintable": true, "solid": false, "category": "grounddeco" },
     { "id": 1888, "offset_x": 0,     "offset_y": 0,  "tintable": true, "solid": false, "category": "grounddeco" },
 
-    { "id": 18,  "offset_x": 0,    "offset_y": 4,    "tintable": true, "solid": false, "category": "grounddeco", "categoryIcon": true },
-    { "id": 19,  "offset_x": 0,    "offset_y": 4,    "tintable": true, "solid": false, "category": "grounddeco" },
+    { "id": 18,  "offset_x": 0,    "offset_y": 4,    "tintable": true, "solid": false, "category": "grounddeco" },
+    { "id": 19,  "offset_x": 0,    "offset_y": 4,    "tintable": true, "solid": false, "category": "grounddeco" , "categoryIcon": true},
     { "id": 20,  "offset_x": 0,    "offset_y": -2,   "tintable": true, "solid": false, "category": "grounddeco" },
     { "id": 21,  "offset_x": 0,    "offset_y": -8,   "tintable": true, "solid": false, "category": "grounddeco" },
     { "id": 48,  "offset_x": 0,    "offset_y": 2,    "tintable": true, "solid": false, "category": "grounddeco" },
@@ -195,10 +195,10 @@
     { "id": 1051, "offset_x": 0,    "offset_y": -2, "tintable": true, "solid": false, "category": "grounddeco" },
     { "id": 1052, "offset_x": 0,    "offset_y": -2, "tintable": true, "solid": false, "category": "grounddeco" },
 
-    { "id": 41,   "offset_x": 0, "offset_y": 20, "tintable": true, "solid": false, "category": "deco", "categoryIcon": true},
+    { "id": 41,   "offset_x": 0, "offset_y": 20, "tintable": true, "solid": false, "category": "deco"},
     { "id": 110,  "offset_x": 0, "offset_y": 2,  "tintable": true, "solid": false, "category": "deco"},
     { "id": 106,  "offset_x": 0, "offset_y": 18, "tintable": true, "solid": false, "category": "deco"},
-    { "id": 107,  "offset_x": 0, "offset_y": 4,  "tintable": true, "solid": false, "category": "deco"},
+    { "id": 107,  "offset_x": 0, "offset_y": 4,  "tintable": true, "solid": false, "category": "deco", "categoryIcon": true},
     { "id": 1764, "offset_x": 0, "offset_y": 0,  "tintable": true, "solid": false, "category": "deco" },
     { "id": 1765, "offset_x": 0, "offset_y": 0,  "tintable": true, "solid": false, "category": "deco" },
     { "id": 1766, "offset_x": 0, "offset_y": 0,  "tintable": true, "solid": false, "category": "deco" },

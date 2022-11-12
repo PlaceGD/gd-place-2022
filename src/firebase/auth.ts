@@ -67,7 +67,7 @@ export const signInGithub = () => signInWithPopup(auth, githubProvider)
 export const signInTwitter = () => signInWithPopup(auth, twitterProvider)
 
 const actionCodeSettings = {
-    url: "http://10.25.14.4:8080/",
+    url: "http://place.gd/",
     handleCodeInApp: true,
 }
 
