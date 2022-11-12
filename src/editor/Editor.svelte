@@ -143,12 +143,21 @@
     }
     updateObjectCategory(currentObjectTab)
 
-    let portrait = window.innerWidth < window.innerHeight
+    let mobile_screen =
+        window.innerWidth < window.innerHeight || window.innerHeight < 600
+
+    let menuIndex = 0
+    function nextMenu(): EditorMenu {
+        return [EditorMenu.Build, EditorMenu.Edit, EditorMenu.Delete][
+            menuIndex++ % 3
+        ]
+    }
 </script>
 
 <svelte:window
     on:resize={() => {
-        portrait = window.innerWidth < window.innerHeight
+        mobile_screen =
+            window.innerWidth < window.innerHeight || window.innerHeight < 600
     }}
     on:pointerup={(e) => {
         pixiApp.dragging = null
@@ -367,15 +376,23 @@
         <div class="menu">
             <div
                 class="side_panel menu_panel"
-                style={portrait ? "justify-content: center; margin: 0;" : ""}
+                style={mobile_screen
+                    ? "justify-content: center; margin: 0;"
+                    : ""}
             >
-                {#if portrait}
-                    {#if currentMenu == EditorMenu.Build}
+                {#if mobile_screen}
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <div
+                        class="portrait_button_container"
+                        on:click={() => {
+                            switchMenu(nextMenu())
+                        }}
+                    >
                         <button
-                            class="invis_button wiggle_button"
-                            on:click={() => {
-                                switchMenu(EditorMenu.Edit)
-                            }}
+                            class="portrait_button invis_button wiggle_button"
+                            style:opacity={+(currentMenu == EditorMenu.Build)}
+                            style:transform="scale({1 -
+                                0.3 * +(currentMenu != EditorMenu.Build)})"
                         >
                             <img
                                 draggable="false"
@@ -392,15 +409,12 @@
                                 />
                             {/if}
                         </button>
-                    {:else if currentMenu == EditorMenu.Edit}
+
                         <button
-                            class="invis_button wiggle_button"
-                            on:click={() => {
-                                switchMenu(EditorMenu.Delete)
-                            }}
-                            style:opacity={currentMenu == EditorMenu.Edit
-                                ? 1
-                                : 0.25}
+                            class="portrait_button invis_button wiggle_button"
+                            style:opacity={+(currentMenu == EditorMenu.Edit)}
+                            style:transform="scale({1 -
+                                0.3 * +(currentMenu != EditorMenu.Edit)})"
                         >
                             <img
                                 draggable="false"
@@ -409,15 +423,12 @@
                                 class="side_panel_button_icon"
                             />
                         </button>
-                    {:else if currentMenu == EditorMenu.Delete}
+
                         <button
-                            class="invis_button wiggle_button"
-                            style:opacity={currentMenu == EditorMenu.Delete
-                                ? 1
-                                : 0.25}
-                            on:click={() => {
-                                switchMenu(EditorMenu.Build)
-                            }}
+                            class="portrait_button invis_button wiggle_button"
+                            style:opacity={+(currentMenu == EditorMenu.Delete)}
+                            style:transform="scale({1 -
+                                0.3 * +(currentMenu != EditorMenu.Delete)})"
                         >
                             <img
                                 draggable="false"
@@ -435,7 +446,24 @@
                                 />
                             {/if}
                         </button>
-                    {/if}
+                    </div>
+
+                    <div class="dots">
+                        <span
+                            class="dot"
+                            id={currentMenu == EditorMenu.Build ? "dot_on" : ""}
+                        />
+                        <span
+                            class="dot"
+                            id={currentMenu == EditorMenu.Edit ? "dot_on" : ""}
+                        />
+                        <span
+                            class="dot"
+                            id={currentMenu == EditorMenu.Delete
+                                ? "dot_on"
+                                : ""}
+                        />
+                    </div>
                 {:else}
                     <button
                         class="invis_button wiggle_button"
@@ -878,7 +906,10 @@
         </div>
     {:else}
         <div class="login_requirement_message">
-            You must be logged in to help build the level!
+            You must be signed in to help build the level!
+            <div style="transform:scale(0.8);opacity:0.5;margin-top:10px;">
+                (click the icon in the top right corner)
+            </div>
         </div>
     {/if}
 </div>
@@ -921,7 +952,7 @@
             --font-small: 18px;
             --font-medium: 24px;
             --font-large: 32px;
-            --side-panel-icon-size: 28px;
+            --side-panel-icon-size: 38px;
             --icon-padding: 5px;
             --timer-scale: 0.5;
             --grid-button-size: 35px;
@@ -945,8 +976,13 @@
         }
 
         .side_panel {
-            transform: translateY(-32px) !important;
-            height: calc(100% + 32px) !important;
+            min-width: 80px !important;
+            min-height: 80px !important;
+        }
+
+        .login_requirement_message {
+            max-height: 25vh;
+            font-size: calc(var(--font-medium) - 6px) !important;
         }
     }
 
@@ -963,6 +999,7 @@
             --grid-button-size: 45px;
             --grid-gap: 12px;
             --font-medium: 22px;
+            --font-large: 32px;
 
             --side-panel-icon-size: 100%;
         }
@@ -978,6 +1015,10 @@
             grid-row-start: 2 !important;
         }
 
+        .tab_button {
+            font-size: calc(var(--font-small) * 0.8) !important;
+        }
+
         .buttons_panel {
             min-width: 200px !important;
             grid-column-start: 1 !important;
@@ -988,6 +1029,10 @@
             grid-area: placeh !important;
             justify-self: center !important;
             width: 100% !important;
+        }
+
+        .login_requirement_message {
+            font-size: calc(var(--font-large) - 6px) !important;
         }
     }
 
@@ -1062,6 +1107,7 @@
         border-radius: 16px;
         padding: var(--font-large);
         justify-content: center;
+        flex-direction: column;
         align-items: center;
         font-family: Pusab, Helvetica, sans-serif;
         color: white;
@@ -1096,6 +1142,27 @@
     }
     .side_panel.menu_panel > button {
         position: relative;
+    }
+
+    .dots {
+        display: flex;
+        flex-direction: row;
+        margin-top: 5px;
+    }
+
+    .dot {
+        height: 6px;
+        width: 6px;
+        background-color: rgb(255, 255, 255, 0.5);
+        border-radius: 50%;
+        display: inline-block;
+        margin: 3px;
+        transition: 0.3s;
+    }
+    #dot_on {
+        background-color: rgb(255, 255, 255);
+        transform: scale(1.2);
+        transition: 0.1s;
     }
     .radial_timer {
         position: absolute;
@@ -1134,11 +1201,9 @@
         height: 32px;
         max-width: 250px;
         flex: 1 0 auto;
-        background-color: #000c;
+        background-color: #000e;
         border-radius: 16px 16px 0 0;
         margin: 0 8px 0 0;
-        backdrop-filter: blur(30px);
-        -webkit-backdrop-filter: blur(30px);
         font-family: Pusab, Helvetica, sans-serif;
         -webkit-text-stroke: 1.5px black;
         color: white;
@@ -1147,10 +1212,31 @@
     }
 
     .tab_button .obj_tab_icon {
-        width: 25px;
-        height: 25px;
+        width: auto;
+        height: auto;
+        max-width: max(20px, 2vw);
+        max-height: max(20px, 2vw);
         object-fit: contain;
         vertical-align: middle;
+        margin: 3px;
+    }
+
+    .portrait_button_container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        cursor: pointer;
+    }
+
+    .portrait_button {
+        position: absolute;
+        height: auto;
+        width: auto;
+        transition: all 0.2s;
     }
 
     .edit_info_text {
@@ -1187,12 +1273,13 @@
     .delete_menu {
         width: 100%;
         height: 100%;
+        padding: 10px;
         display: flex;
         justify-content: center;
         align-items: center;
         font-family: Pusab, Helvetica, sans-serif;
         color: white;
-        font-size: calc(var(--font-medium) * 1.5);
+        font-size: calc(var(--font-medium));
         grid-area: container;
         text-align: center;
         -webkit-text-stroke: 1px black;
@@ -1253,7 +1340,7 @@
     }
 
     .debug_objectID {
-        /* display: none; */
+        display: none;
     }
 
     .object_comment {
@@ -1375,8 +1462,23 @@
         box-shadow: 0 0 0 300px rgba(#95a, 0.75);
     }
 
-    .button_icon {
+    .edit_button > .button_icon {
         object-fit: fill;
+        max-width: 60%;
+        max-height: 60%;
+        width: auto;
+        height: auto;
+    }
+
+    .obj_button > .button_icon {
+        display: block;
+
+        max-width: 200%;
+        max-height: 200%;
+        width: auto;
+        height: auto;
+
+        transform: scale(0.4);
     }
 
     .invis_button {

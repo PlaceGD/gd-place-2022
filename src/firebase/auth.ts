@@ -58,15 +58,16 @@ export type UserData = {
     data: UserProperties | null // no user data
 }
 
+// DfccSiqo33HLBK-xJ8nvbN4gv3xzTJC54sZIk5CWsKlhtvhTfh
+
 export const currentUserData: Writable<UserData | null> = writable(null)
 
 export const signInGoogle = () => signInWithPopup(auth, googleProvider)
 export const signInGithub = () => signInWithPopup(auth, githubProvider)
 export const signInTwitter = () => signInWithPopup(auth, twitterProvider)
-export const signInGD = (token) => signInWithCustomToken(auth, token)
 
 const actionCodeSettings = {
-    url: "https://geometrydash-place.web.app",
+    url: "http://10.25.14.4:8080/",
     handleCodeInApp: true,
 }
 
@@ -93,6 +94,7 @@ export const canEdit = derived(
 let userDataListener = null
 
 onAuthStateChanged(auth, async (user) => {
+    console.log("hi")
     if (user != null) {
         console.log("signed in")
         let userDataValue = {

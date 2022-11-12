@@ -19,36 +19,18 @@
     if (isEmailVerification) {
         //setPersistence(auth, browserLocalPersistence)
 
-        let email = window.localStorage.getItem("emailForSignIn")
-        if (!email) {
-            email = window.prompt("Please provide your email for confirmation")
+        const onStorage2 = (event) => {
+            console.log(event)
+            if (event.key == "loginSuccess") {
+                window.removeEventListener("storage", onStorage2)
+                emailSuccess = `${event.newValue} You can safely close this tab.`
+                localStorage.removeItem("loginSuccess")
+            }
         }
-        signInWithEmailLink(auth, email, window.location.href)
-            .then((result) => {
-                window.localStorage.removeItem("emailForSignIn")
 
-                emailSuccess =
-                    "You are now signed in! You can safely close this tab."
-
-                result.user.getIdToken(true)
-
-                window.localStorage.setItem(
-                    "emailUser",
-                    JSON.stringify(result.user.toJSON())
-                )
-
-                window.dispatchEvent(new Event("storage"))
-            })
-            .catch((err) => {
-                console.error(err)
-
-                toast.push(
-                    `Failed to send email! (${err.message})`,
-                    toastErrorTheme
-                )
-
-                emailSuccess = `Failed to sign in:  ${err.message}`
-            })
+        window.addEventListener("storage", onStorage2)
+        window.localStorage.setItem("emailCode", window.location.href)
+        window.dispatchEvent(new Event("storage"))
     }
 </script>
 

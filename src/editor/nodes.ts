@@ -450,8 +450,6 @@ export class ObjectNode extends PIXI.Container {
         mainSprite.on("mouseover", () => {
             this.isHovering = true
 
-            console.log("here")
-
             let t = setTimeout(() => {
                 if (this.isHovering && tooltip) {
                     tooltip.update(this)

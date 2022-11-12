@@ -5,6 +5,7 @@
     import {
         browserLocalPersistence,
         setPersistence,
+        signInWithEmailLink,
         type User,
     } from "firebase/auth"
     import { get, ref } from "firebase/database"
@@ -20,6 +21,7 @@
         currentUserData,
         type UserProperties,
         signInEmailLink,
+        signInTwitter,
     } from "../firebase/auth"
 
     import { auth, database } from "../firebase/init"
@@ -104,11 +106,13 @@
     }
 
     const logInSuccess = (user) => {
+        console.log(user)
+        console.log(loadedUserData)
         get(ref(database, `userData/${user.user.uid}`))
             .then((snapshot) => {
                 userProperties = snapshot.val()
 
-                toast.push("Login successful!", toastSuccessTheme)
+                toast.push("Signed in successfully!", toastSuccessTheme)
 
                 updateSlides()
                 slideNextOrFinish()
@@ -143,19 +147,12 @@
             },
         },
         {
-            disabled: true,
             image: "twitter.svg",
             name: "Twitter",
             cb: () => {
                 disableCurrentSlide()
-                //signInTwitter().then(logInSuccess).catch(logInFailed)
+                signInTwitter().then(logInSuccess).catch(logInFailed)
             },
-        },
-        {
-            disabled: true,
-            image: "gd.png",
-            name: "GD",
-            cb: () => {},
         },
     ]
 
@@ -176,7 +173,7 @@
             <img
                 draggable="false"
                 src="/login/profile_in.png"
-                alt="login button"
+                alt="sign in button"
             />
         </button>
     {:else}
@@ -250,35 +247,37 @@
                 >
                     <SwiperSlide class="login_swiper_slide">
                         <div class="login_popup">
-                            <div class="login_popup_title">Login/Register</div>
+                            <div class="login_popup_title">
+                                Sign in/Register
+                            </div>
                             <div class="login_popup_text">
-                                Login/register with one of the following
-                                services (Twitter and Geometry Dash will be
-                                implemented at a later time). After logging in,
-                                you will be able to make a username. We will not
-                                be able to access any of your data, this is just
-                                for authentication.
+                                Sign in/register with one of the following
+                                services. After signing in, you will be able to
+                                make a username.
+                                <b>
+                                    We will not be able to access any of your
+                                    data
+                                </b>, this is just for authentication.
                             </div>
                             <div class="login_popup_icons">
                                 {#each loginButtons as button}
                                     <button
-                                        disabled={button?.disabled}
                                         class="login_method_button invis_button"
                                         on:click={button.cb}
                                     >
                                         <img
                                             draggable="false"
                                             src="/login/{button.image}"
-                                            alt="{button.name} login provider"
+                                            alt="{button.name} sign in provider"
                                         />
-                                        Login with {button.name}
+                                        Sign in with {button.name}
                                     </button>
                                 {/each}
                             </div>
 
                             <div class="email_password_login">
                                 <div class="email_password_header">
-                                    Or Login/Register with Email
+                                    Or sign in/register with Email
                                 </div>
                                 <input
                                     class="email_password_input"
@@ -292,42 +291,77 @@
                                         on:click={() => {
                                             signInEmailLink(emailInput)
                                                 .then((user) => {
-                                                    localStorage.setItem(
-                                                        "emailForSignIn",
-                                                        emailInput
-                                                    )
-
                                                     const onStorage = (
                                                         event
                                                     ) => {
                                                         if (
                                                             event.key ==
-                                                            "emailUser"
+                                                            "emailCode"
                                                         ) {
                                                             window.removeEventListener(
                                                                 "storage",
                                                                 onStorage
                                                             )
 
-                                                            let userDataValue =
-                                                                {
-                                                                    user: JSON.parse(
-                                                                        localStorage.getItem(
-                                                                            "emailUser"
-                                                                        )
-                                                                    ),
-                                                                    data: null,
-                                                                }
-                                                            currentUserData.set(
-                                                                userDataValue
-                                                            )
-                                                            localStorage.removeItem(
-                                                                "emailUser"
-                                                            )
+                                                            const href =
+                                                                localStorage.getItem(
+                                                                    "emailCode"
+                                                                )
 
-                                                            logInSuccess(
-                                                                userDataValue
+                                                            signInWithEmailLink(
+                                                                auth,
+                                                                emailInput,
+                                                                href
                                                             )
+                                                                .then(
+                                                                    (
+                                                                        result
+                                                                    ) => {
+                                                                        let userDataValue =
+                                                                            {
+                                                                                user: result.user,
+                                                                                data: null,
+                                                                            }
+                                                                        currentUserData.set(
+                                                                            userDataValue
+                                                                        )
+
+                                                                        localStorage.setItem(
+                                                                            "loginSuccess",
+                                                                            "You are now logged in!"
+                                                                        )
+                                                                        window.dispatchEvent(
+                                                                            new Event(
+                                                                                "storage"
+                                                                            )
+                                                                        )
+
+                                                                        logInSuccess(
+                                                                            userDataValue
+                                                                        )
+                                                                    }
+                                                                )
+                                                                .catch(
+                                                                    (err) => {
+                                                                        console.error(
+                                                                            err
+                                                                        )
+                                                                        toast.push(
+                                                                            `Failed to send email! (${err.message})`,
+                                                                            toastErrorTheme
+                                                                        )
+
+                                                                        localStorage.setItem(
+                                                                            "loginSuccess",
+                                                                            `Failed to log in! (${err.message})`
+                                                                        )
+                                                                        window.dispatchEvent(
+                                                                            new Event(
+                                                                                "storage"
+                                                                            )
+                                                                        )
+                                                                    }
+                                                                )
                                                         }
                                                     }
 
@@ -502,7 +536,7 @@
         flex-direction: column;
 
         align-items: center;
-        overflow-y: hidden;
+        overflow-y: auto;
     }
 
     .email_password_login {
@@ -527,9 +561,9 @@
     }
 
     .email_password_login_button {
-        width: 50%;
+        width: 60%;
         border-radius: 8px;
-        background-color: #00000000;
+        background-color: #0b0b0e;
         border: 2px solid #bbbbbb;
         color: white;
         font-family: Cabin;
@@ -540,8 +574,12 @@
         justify-content: center;
         align-items: center;
         padding: 15px;
+        transition: 1s;
     }
-
+    .email_password_login_button:hover {
+        box-shadow: rgba(76, 255, 40, 0.185) 0px 0px 5px 5px;
+        transition: 0.2s;
+    }
     .email_password_input {
         border-radius: 8px;
         background-color: #00000000;
@@ -556,7 +594,7 @@
         align-items: center;
         padding: 15px;
         margin: 5px;
-        width: 50%;
+        width: 60%;
     }
 
     .login_popup_title {
@@ -595,7 +633,7 @@
         align-items: center;
         justify-content: center;
         padding: 8px;
-        gap: 60px;
+        gap: auto;
         margin-top: 5vh;
     }
 
