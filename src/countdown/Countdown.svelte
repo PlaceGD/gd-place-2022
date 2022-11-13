@@ -175,7 +175,7 @@
 
 <style>
     :root {
-        --shadow-color: #ff9e9e99;
+        --shadow-color: #ff9e9e77;
         --shadow-color-light: white;
     }
 

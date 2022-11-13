@@ -1,16 +1,16 @@
 import * as PIXI from "pixi.js"
 import * as PIXI_LAYERS from "@pixi/layers"
-import { get, writable, type Writable } from "svelte/store"
+import { writable, type Writable } from "svelte/store"
+import debounce from "lodash.debounce"
 
 import { vec, type Vector } from "../utils/vector"
-import { EditorNode, LEVEL_BOUNDS } from "./nodes"
+import { EditorNode, LEVEL_BOUNDS, type ObjectInfo } from "./nodes"
 import { map_range } from "../utils/math"
 
 import { Howl, Howler } from "howler"
 import { getColors } from "./colors"
 import { ChunkNode, CHUNK_SIZE, getHistory } from "../firebase/database"
 import { GDObject } from "./object"
-import { onMount } from "svelte"
 import { settings } from "../settings/settings"
 
 export const DRAGGING_THRESHOLD = 40.0
@@ -33,7 +33,7 @@ export enum EditorMenu {
     Delete,
 }
 
-export let selectedObject = writable(null)
+export let selectedObject: Writable<ObjectInfo> = writable(null)
 
 export let pixiCanvas: Writable<HTMLCanvasElement | null> = writable(null)
 
@@ -44,7 +44,17 @@ pixiAppStore.subscribe((app) => {
     if (app) pixiApp = app
 })
 
+const setUrlDebounced = debounce((x, y, zoom) => {
+    history.replaceState({}, "", `?x=${x}&y=${y}&zoom=${zoom}`)
+}, 1000)
+
 export function storePosState(app: EditorApp) {
+    const x = Math.floor(app.editorNode.cameraPos.x / 30)
+    const y = Math.floor(app.editorNode.cameraPos.y / 30)
+    const zoom = Math.floor(app.editorNode.zoomLevel)
+
+    setUrlDebounced(x, y, zoom)
+
     localStorage.setItem(
         "editorPosition",
         JSON.stringify({

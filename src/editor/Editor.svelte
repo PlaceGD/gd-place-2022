@@ -52,12 +52,21 @@
     }
 
     onMount(() => {
+        let data = new URLSearchParams(window.location.search)
+
         // get editor position from local storage
-        let editorPosition: any = localStorage.getItem("editorPosition")
-        if (editorPosition) {
-            editorPosition = JSON.parse(editorPosition)
-        } else {
+        let editorPosition: any = JSON.parse(
+            localStorage.getItem("editorPosition")
+        )
+
+        if (!editorPosition) {
             editorPosition = { x: 0, y: 0, zoom: 0 }
+        }
+
+        editorPosition = {
+            x: parseInt(data.get("x")) * 30 || editorPosition?.x,
+            y: parseInt(data.get("y")) * 30 || editorPosition?.y,
+            zoom: parseInt(data.get("zoom")) || editorPosition?.zoom,
         }
 
         pixiAppStore.set(new EditorApp($pixiCanvas, editorPosition))
@@ -379,16 +388,44 @@
                 <b> Object type: </b>
                 <img
                     draggable="false"
-                    alt={$selectedObject.obj.id}
-                    style="max-height: 20px;"
-                    class="obj_tab_icon"
-                    use:lazyLoad={`/gd/objects/main/${$selectedObject.obj.id}.png`}
+                    alt={$selectedObject.obj.id.toString()}
+                    class="info_icon"
+                    src={`/gd/objects/main/${$selectedObject.obj.id}.png`}
                 />
+            </div>
+
+            {#each [[$selectedObject.obj.mainColor, "Main color"], [$selectedObject.obj.detailColor, "Detail color"]] as [color, name]}
+                <div class="info_line">
+                    <b> {name}: </b>
+                    <div class="color_info">
+                        <div
+                            class="color_circle"
+                            style="background-color: #{color['hex']}"
+                        />
+                        {#if color["blending"]}
+                            <span class="blending_info"> B </span>
+                        {/if}
+                        {#if color["opacity"] != 1.0}
+                            <span class="opacity_info">
+                                {color["opacity"] * 100}%
+                            </span>
+                        {/if}
+                    </div>
+                </div>
+            {/each}
+
+            <div class="info_line">
+                <b> Z layer: </b>
+                {$selectedObject.obj.zOrder}
+            </div>
+            <div class="info_line">
+                <b> Rotation: </b>
+                {$selectedObject.obj.rotation}°
             </div>
         </div>
     {/if}
 
-    {#if $canEdit}
+    {#if $canEdit && !settings.hideMenu.enabled}
         <div class="menu">
             <div
                 class="side_panel menu_panel"
@@ -684,7 +721,6 @@
                                     <div class="color_header">
                                         {channel}
                                     </div>
-
                                     {#each PALETTE as color}
                                         <button
                                             class="edit_button invis_button wiggle_button"
@@ -930,7 +966,7 @@
                 </button>
             {/if}
         </div>
-    {:else}
+    {:else if !settings.hideMenu.enabled}
         <div class="login_requirement_message">
             You must be signed in to help build the level!
             <div style="transform:scale(0.8);opacity:0.5;margin-top:10px;">
@@ -1386,14 +1422,65 @@
         color: white;
         font-size: calc(var(--font-small) * 0.7);
         font-family: Cabin, sans-serif;
+        max-height: 30vh;
+        overflow-y: auto;
     }
 
     .info_line {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        margin: 0 0 4px 0;
+        height: 20px;
+        width: 100%;
         flex-direction: row;
+        margin: 0 0 10px 0;
+    }
+
+    .info_icon {
+        width: auto;
+        height: auto;
+        max-height: 20px;
+        max-width: 40px;
+        float: right;
+        object-fit: contain;
+        vertical-align: middle;
+    }
+
+    .color_info {
+        width: fit-content;
+        height: 20px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+        row-gap: 50px;
+        margin: 0 0 4px 0;
+    }
+
+    .color_circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        float: right;
+        outline: 2px solid white;
+    }
+
+    .blending_info {
+        width: 20px;
+        height: 20px;
+        font-family: Pusab, Helvetica, sans-serif;
+        color: white;
+        font-size: 24px;
+        float: right;
+        transform: translateY(-3px);
+    }
+
+    .opacity_info {
+        width: 40px;
+        height: 20px;
+        font-family: Cabin, Helvetica, sans-serif;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 18px;
+        float: right;
     }
 
     .object_comment {
@@ -1433,9 +1520,7 @@
 
     .color_header {
         display: flex;
-        gap: 8px;
         justify-content: center;
-        width: auto;
         grid-column-end: 8;
         grid-column-start: 2;
 

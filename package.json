@@ -15,6 +15,7 @@
     "devDependencies": {
         "@sveltejs/vite-plugin-svelte": "^1.0.2",
         "@tsconfig/svelte": "^3.0.0",
+        "@types/lodash.debounce": "^4.0.7",
         "@types/uuid": "^8.3.4",
         "svelte": "^3.49.0",
         "svelte-check": "^2.8.1",
@@ -31,6 +32,7 @@
         "firebase": "^9.13.0",
         "howler": "^2.2.3",
         "iter-tools": "^7.5.0",
+        "lodash.debounce": "^4.0.8",
         "node-fetch": "^3.2.10",
         "pixi.js": "^6.5.8",
         "svelte-gesture": "^0.1.2",

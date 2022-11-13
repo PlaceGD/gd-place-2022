@@ -25,9 +25,13 @@ const DEAFULT_SETTINGS = {
     hideDecoObjects: {
         enabled: false,
         label: "Hide decoration objects",
-        cb: (ev) => {
-            pixiApp.editorNode.toggleDecoObjects()
+        cb: () => {
+            pixiApp?.editorNode?.toggleDecoObjects()
         },
+    },
+    hideMenu: {
+        enabled: false,
+        label: "Hide menu",
     },
 }
 
@@ -42,7 +46,6 @@ try {
         let new_settings = DEAFULT_SETTINGS
         Object.keys(savedSettings).forEach((k) => {
             new_settings[k].enabled = !!savedSettings[k]
-            console.log(savedSettings[k])
         })
         settings_writable.set(new_settings)
     }

@@ -106,8 +106,6 @@
     }
 
     const logInSuccess = (user) => {
-        console.log(user)
-        console.log(loadedUserData)
         get(ref(database, `userData/${user.user.uid}`))
             .then((snapshot) => {
                 userProperties = snapshot.val()
@@ -168,9 +166,36 @@
                 outMin
             )
         }
-        return `linear-gradient(to bottom, ${cols.map((c, i) => {
-            return `#${c.toString(16)} ${map(i, 0, cols.length - 1, 0, 100)}%`
-        })})`
+
+        return `linear-gradient(to bottom, ${cols
+            .map((c, i) => {
+                return `#${c.toString(16)}\
+                ${map(i, 0, cols.length - 1, 20, 80)}%`
+            })
+            .join(",")})`
+    }
+
+    function complement(colors) {
+        // returns "black" or "white"
+        const rbg = colors.map((color) => [
+            (color >> 16) & 255,
+            (color >> 8) & 255,
+            color & 255,
+        ])
+        let [r, g, b] = rbg.reduce(
+            (acc, cur) => [acc[0] + cur[0], acc[1] + cur[1], acc[2] + cur[2]],
+            [0, 0, 0]
+        )
+        r = r / rbg.length
+        g = g / rbg.length
+        b = b / rbg.length
+        const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+        return luma > 255 / 2
+            ? `2px rgb(${(r / 2 / 255) ** 1.5 * 255}, ${
+                  (g / 2 / 255) ** 1.5 * 255
+              }, ${(b / 2 / 255) ** 1.5 * 255})`
+            : "2px black"
     }
 </script>
 
@@ -217,7 +242,9 @@
             {#await getUsernameColors(loadedUserData.data.username) then colors}
                 <div
                     class="username_display"
-                    style={`background-image: ${toGradient(colors)}`}
+                    style="background-image: {toGradient(
+                        colors
+                    )};-webkit-text-stroke: {complement(colors)};"
                 >
                     {loadedUserData.data.username}
                 </div>
@@ -456,7 +483,7 @@
                                                     slideNextOrFinish()
                                                 })
                                                 .catch((err) => {
-                                                    console.log(err)
+                                                    console.error(err)
                                                     toast.push(
                                                         "Username already taken!",
                                                         toastErrorTheme
@@ -730,7 +757,6 @@
         background-clip: text !important;
         -webkit-background-clip: text !important;
         text-align: right;
-        -webkit-text-stroke: 2px black;
         -webkit-filter: drop-shadow(5px 5px 10px #0006);
         filter: drop-shadow(5px 5px 10px #0006);
     }

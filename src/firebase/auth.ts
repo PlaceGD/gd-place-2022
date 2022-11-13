@@ -93,7 +93,6 @@ let userDataListener = null
 let userDisplayColorListener = null
 
 onAuthStateChanged(auth, async (user) => {
-    console.log("hi")
     if (user != null) {
         console.log("signed in")
         let userDataValue = {

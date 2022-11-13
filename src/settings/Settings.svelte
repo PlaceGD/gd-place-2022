@@ -1,6 +1,24 @@
 <script lang="ts">
+    import { currentUserData } from "../firebase/auth"
+    import { getUsernameColors } from "../firebase/database"
     import { settings, saveSettings, settings_writable } from "./settings"
     let settingsOpen = false
+
+    const toGradient = (cols: number[]): string => {
+        const map = (number, inMin, inMax, outMin, outMax) => {
+            return (
+                ((number - inMin) * (outMax - outMin)) / (inMax - inMin) +
+                outMin
+            )
+        }
+
+        return `linear-gradient(to bottom, ${cols
+            .map((c, i) => {
+                return `#${c.toString(16)}\
+                ${map(i, 0, cols.length - 1, 40, 60)}%`
+            })
+            .join(",")})`
+    }
 </script>
 
 <div class="all">
@@ -33,9 +51,19 @@
                 </div>
             {/each}
 
+            {#await getUsernameColors($currentUserData?.data?.username) then colors}
+                <b> Name tag: </b>
+                <div
+                    class="username_display"
+                    style="background-image: {toGradient(colors)}"
+                >
+                    {$currentUserData.data.username}
+                </div>
+            {/await}
+
             <i class="name_color_info">
                 <b> Colored names: </b> if you want a different color on your
-                name-tag, send the colors you want in a donation in
+                name tag, send the colors you want in a donation in
                 <a href="https://www.youtube.com/c/Spu7Nix">
                     Spu7Nix's stream</a
                 >!
@@ -127,6 +155,20 @@
         border-width: 0 2px 2px 0;
         transform: rotate(45deg);
         transition: ease-in 0.3s;
+    }
+
+    .username_display {
+        font-family: Cabin, sans-serif;
+        font-size: var(--font-medium);
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+        -webkit-background-clip: text !important;
+        width: 100%;
+        height: fit-content;
+        padding: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
     .settings_menu {

@@ -25,6 +25,11 @@ export const LEVEL_BOUNDS = {
 }
 const GROUND_SCALE = (30 * 4.25) / 512
 
+export type ObjectInfo = {
+    obj: GDObject
+    dbname: string
+}
+
 const SPAWN_POS = vec(Math.random() * 30 * 1000, 0)
 
 const BLENDING_SHADER = `
@@ -208,8 +213,8 @@ export class EditorNode extends PIXI.Container {
         this.selectableWorld.visible = willYouMakeThemSelectable
     }
     deselectObject() {
-        selectedObject.set(null)
         if (this.selectedObjectNode != null) {
+            selectedObject.set(null)
             this.selectedObjectNode.getChildByName("select_box")?.destroy()
             this.selectedObjectNode.mainSprite().tint = parseInt(
                 this.selectedObjectNode.mainColor.hex,
@@ -491,59 +496,55 @@ export class ObjectNode extends PIXI.Container {
         mainSprite.parentGroup = layerGroup
         this.addChild(mainSprite)
 
-        mainSprite.on("mouseover", () => {
+        const showTooltip = () => {
             this.isHovering = true
 
             let t = setTimeout(() => {
                 if (this.isHovering && tooltip) {
+                    console.log(this)
                     tooltip.update(this)
                 }
 
                 clearTimeout(t)
             }, 250)
-        })
+        }
 
-        mainSprite.on("touchstart", () => {
-            this.isHovering = true
-
-            let t = setTimeout(() => {
-                if (this.isHovering && tooltip) {
-                    tooltip.update(this)
-                }
-
-                clearTimeout(t)
-            }, 250)
-        })
-
-        mainSprite.on("touchend", () => {
+        const hideTooltip = () => {
             this.isHovering = false
 
             if (tooltip) {
                 tooltip.visible = false
                 tooltip.unHighlight()
             }
-        })
-
-        mainSprite.on("mouseout", () => {
-            this.isHovering = false
-
-            if (tooltip) {
-                tooltip.visible = false
-                tooltip.unHighlight()
-            }
-        })
+        }
 
         let detailSprite = new PIXI.Sprite(
             PIXI.Texture.from(`/gd/objects/detail/${obj.id}.png`)
         )
+        detailSprite.interactive = true
 
         detailSprite.anchor.set(0.5)
         detailSprite.scale.set(0.25, -0.25)
         detailSprite.parentGroup = layerGroup
 
+        for (let sprite of [mainSprite, detailSprite]) {
+            sprite.on("mouseover", showTooltip)
+            sprite.on("touchstart", showTooltip)
+
+            sprite.on("touchend", hideTooltip)
+            sprite.on("mouseout", hideTooltip)
+        }
+
         this.addChild(detailSprite)
 
         this.update(obj)
+    }
+
+    getObjInfo(): ObjectInfo {
+        return {
+            obj: this.obj,
+            dbname: this.name,
+        }
     }
 
     update(obj: GDObject) {
@@ -645,7 +646,9 @@ class TooltipNode extends PIXI.Graphics {
     }
 
     unHighlight() {
-        selectedObject.set(null)
+        if (this.show && settings.showTooltips.enabled) {
+            selectedObject.set(null)
+        }
         if (this.currentObject) {
             this.currentObject.getChildByName("highlight")?.destroy()
         }
@@ -653,8 +656,6 @@ class TooltipNode extends PIXI.Graphics {
 
     update(on: ObjectNode) {
         const padding = 5
-
-        selectedObject.set(on)
 
         const size = Math.min(Math.max(MIN_ZOOM - this.zoom, 6), 20)
 
@@ -669,6 +670,10 @@ class TooltipNode extends PIXI.Graphics {
             this.show &&
             !settings.disableObjectOutline.enabled &&
             settings.showTooltips.enabled
+
+        if (this.show && settings.showTooltips.enabled) {
+            selectedObject.set(on.getObjInfo())
+        }
         highlight.name = "highlight"
         highlight.alpha = 0.5
         highlight

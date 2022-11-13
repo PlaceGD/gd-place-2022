@@ -192,6 +192,8 @@ export class ChunkNode extends PIXI.Container {
                     objectNode.mainSprite().alpha = 1.0
                     objectNode.detailSprite().alpha = 1.0
 
+                    selectedObject.set(objectNode.getObjInfo())
+
                     const select_box = new PIXI.Graphics()
                     select_box.name = "select_box"
                     select_box.visible = !settings.disableObjectOutline.enabled
@@ -214,7 +216,6 @@ export class ChunkNode extends PIXI.Container {
                     objectNode.addChild(select_box)
 
                     editorNode.selectedObjectNode = objectNode
-                    selectedObject.set(objectNode)
                     selectableSprite.zOrder = editorNode.nextSelectionZ
                     editorNode.nextSelectionZ -= 1
                     editorNode.selectedObjectChunk = chunkName
