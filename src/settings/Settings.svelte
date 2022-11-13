@@ -56,7 +56,6 @@
         z-index: 40;
     }
 
-    *,
     *:before,
     *:after {
         -webkit-box-sizing: border-box;

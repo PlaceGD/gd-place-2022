@@ -1,28 +1,17 @@
 <script lang="ts">
-    import { SvelteToast, toast } from "@zerodevx/svelte-toast"
+    import { SvelteToast } from "@zerodevx/svelte-toast"
 
     import Auth from "./auth/Auth.svelte"
     import Settings from "./settings/Settings.svelte"
     import Editor from "./editor/Editor.svelte"
     import { currentUserData } from "./firebase/auth"
     import { isEmailVerification } from "./firebase/auth"
-    import {
-        browserLocalPersistence,
-        setPersistence,
-        signInWithEmailLink,
-        signOut,
-    } from "firebase/auth"
-    import { toastErrorTheme } from "./const"
-    import { auth } from "./firebase/init"
-    import { onMount } from "svelte"
+    import Countdown from "./countdown/Countdown.svelte"
 
     let emailSuccess = "loading"
 
     if (isEmailVerification) {
-        //setPersistence(auth, browserLocalPersistence)
-
         const onStorage2 = (event) => {
-            console.log(event)
             if (event.key == "loginSuccess") {
                 window.removeEventListener("storage", onStorage2)
                 emailSuccess = `${event.newValue} You can safely close this tab.`
@@ -38,7 +27,9 @@
 
 <SvelteToast options={{ reversed: true, intro: { y: 192 } }} />
 
-{#if isEmailVerification}
+<Countdown />
+
+<!-- {#if isEmailVerification}
     <div class="email">
         {emailSuccess}
     </div>
@@ -47,15 +38,16 @@
     <Auth loadedUserData={$currentUserData} />
     <Settings />
 {:else}
-    <div class="loading">
-        <img
-            src="/loadinganimcss.svg"
-            alt="Loading icon"
-            class="loading_icon"
-        />
+    <div class="loading_container">
+        <div class="loading">
+            <img
+                src="/loadinganimcss.svg"
+                alt="Loading icon"
+                class="loading_icon"
+            />
+        </div>
     </div>
-{/if}
-
+{/if} -->
 <style>
     .email {
         display: flex;
@@ -65,7 +57,7 @@
         font-family: sans-serif;
     }
 
-    .loading {
+    .loading_container {
         display: flex;
         justify-content: center;
         align-items: center;
@@ -73,10 +65,14 @@
         backdrop-filter: blur(32px);
         -webkit-backdrop-filter: blur(32px);
         width: 100%;
-        height: 25%;
+        height: 100%;
         z-index: 100;
         position: absolute;
         bottom: 0;
+    }
+    .loading {
+        width: 50%;
+        height: 50%;
     }
     .loading_icon {
         height: 100%;

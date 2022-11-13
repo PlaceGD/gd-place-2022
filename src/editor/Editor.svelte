@@ -106,11 +106,8 @@
     const gradientFunc = (t) =>
         `conic-gradient(white ${t * 360}deg, black ${t * 360}deg 360deg)`
 
-    let userUID = null
-
     currentUserData.subscribe((value) => {
         if (typeof value != "string" && value != null) {
-            userUID = value.user.uid
             if (typeof value.data != "string" && value.data != null) {
                 lastDeleted = value.data.lastDeleted
                 lastPlaced = value.data.lastPlaced
@@ -1370,9 +1367,9 @@
         transform: scale(1.1);
     }
 
-    /* .debug_objectID {
+    .debug_objectID {
         display: none;
-    } */
+    }
 
     .obj_info {
         position: absolute;

@@ -46,7 +46,6 @@ setPersistence(auth, inMemoryPersistence)
 let googleProvider = new GoogleAuthProvider()
 let githubProvider = new GithubAuthProvider()
 let twitterProvider = new TwitterAuthProvider()
-// let emailProvider = new EmailAuthProvider()
 
 export type UserProperties = {
     username: string
@@ -57,8 +56,6 @@ export type UserData = {
     user: User
     data: UserProperties | null // no user data
 }
-
-// DfccSiqo33HLBK-xJ8nvbN4gv3xzTJC54sZIk5CWsKlhtvhTfh
 
 export const currentUserData: Writable<UserData | null> = writable(null)
 export const currentUserDisplayColor: Writable<string> = writable(null)

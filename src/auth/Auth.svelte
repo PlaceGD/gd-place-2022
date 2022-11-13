@@ -23,8 +23,8 @@
         signInEmailLink,
         signInTwitter,
     } from "../firebase/auth"
-
     import { auth, database } from "../firebase/init"
+    import { getUsernameColors } from "../firebase/database"
 
     import "swiper/css"
     import "./auth.css"
@@ -160,6 +160,18 @@
     $: validUsername = usernameInput.match(/^[A-Za-z0-9_-]{3,16}$/)
 
     let emailInput = window.localStorage.getItem("emailForSignIn") || ""
+
+    const toGradient = (cols: number[]): string => {
+        const map = (number, inMin, inMax, outMin, outMax) => {
+            return (
+                ((number - inMin) * (outMax - outMin)) / (inMax - inMin) +
+                outMin
+            )
+        }
+        return `linear-gradient(to bottom, ${cols.map((c, i) => {
+            return `#${c.toString(16)} ${map(i, 0, cols.length - 1, 0, 100)}%`
+        })})`
+    }
 </script>
 
 <div class="all">
@@ -202,7 +214,14 @@
             />
         </button>
         {#if loadedUserData.data != null && typeof loadedUserData.data != "string"}
-            <div class="username_display">{loadedUserData.data.username}</div>
+            {#await getUsernameColors(loadedUserData.data.username) then colors}
+                <div
+                    class="username_display"
+                    style={`background-image: ${toGradient(colors)}`}
+                >
+                    {loadedUserData.data.username}
+                </div>
+            {/await}
         {/if}
     {/if}
 
@@ -707,10 +726,13 @@
         margin-right: calc(100px + 75px + 5px);
         font-family: Pusab;
         font-size: var(--font-medium);
-        color: white;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+        -webkit-background-clip: text !important;
         text-align: right;
-        text-shadow: 0 2px 6px #000d;
-        -webkit-text-stroke: 1px black;
+        -webkit-text-stroke: 2px black;
+        -webkit-filter: drop-shadow(5px 5px 10px #0006);
+        filter: drop-shadow(5px 5px 10px #0006);
     }
 
     .loading_container {

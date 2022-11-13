@@ -25,6 +25,36 @@ export async function getHistory() {
     return (await get(ref(database, "history"))).val()
 }
 
+export let userColorCache = {}
+export async function getUsernameColors(username: string): Promise<number[]> {
+    return (
+        userColorCache[username] ||
+        (await (async () => {
+            let colorSnap = await get(
+                ref(
+                    database,
+                    `userName/${username?.toLowerCase()}/displayColor`
+                )
+            )
+
+            let color
+
+            if (!colorSnap.exists()) {
+                color = [0xffffff]
+            } else {
+                color = colorSnap
+                    .val()
+                    .split(" ")
+                    .map((a) => parseInt(a, 16))
+            }
+
+            userColorCache[username] = color
+
+            return color
+        })())
+    )
+}
+
 export const initChunkBehavior = (
     editorNode: EditorNode,
     worldNode: PIXI.Container,

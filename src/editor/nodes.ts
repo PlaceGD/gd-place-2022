@@ -10,6 +10,7 @@ import {
     initChunkBehavior,
     CHUNK_SIZE,
     ChunkNode,
+    getUsernameColors,
 } from "../firebase/database"
 import { clamp, wrap } from "../utils/math"
 
@@ -599,7 +600,6 @@ export class ObjectNode extends PIXI.Container {
 }
 
 let userPlacedCache = {}
-let userColorCache = {}
 
 class TooltipNode extends PIXI.Graphics {
     text: PIXI.Text
@@ -682,28 +682,7 @@ class TooltipNode extends PIXI.Graphics {
         this.currentObject.addChild(highlight)
         const show = async (username) => {
             // check for color
-            let color
-            if (userColorCache[username]) {
-                color = userColorCache[username]
-            } else {
-                let colorSnap = await get(
-                    ref(
-                        database,
-                        `userName/${username?.toLowerCase()}/displayColor`
-                    )
-                )
-
-                if (!colorSnap.exists()) {
-                    color = 0xffffff
-                } else {
-                    color = colorSnap
-                        .val()
-                        .split(" ")
-                        .map((a) => parseInt(a, 16))
-                }
-
-                userColorCache[username] = color
-            }
+            let color = await getUsernameColors(username)
 
             this.nameText.text = username
             this.nameText.style.fill = color
@@ -781,28 +760,8 @@ export class DeleteObjectLabel extends PIXI.Graphics {
 
     async init(username: string) {
         this.spawn_time = Date.now()
-        let color
-        if (userColorCache[username]) {
-            color = userColorCache[username]
-        } else {
-            let colorSnap = await get(
-                ref(
-                    database,
-                    `userName/${username?.toLowerCase()}/displayColor`
-                )
-            )
 
-            if (!colorSnap.exists()) {
-                color = 0xffffff
-            } else {
-                color = colorSnap
-                    .val()
-                    .split(" ")
-                    .map((a) => parseInt(a, 16))
-            }
-
-            userColorCache[username] = color
-        }
+        let color = await getUsernameColors(username)
 
         this.text = new PIXI.Text("Deleted by ", {
             fontFamily: ["Cabin", "sans-serif"],
