@@ -180,17 +180,19 @@
         <button
             class="log_in_out_button invis_button wiggle_button"
             on:click={() => {
-                signOut()
-                    .then(() => {
-                        toast.push(
-                            "Successfully logged out!",
-                            toastSuccessTheme
-                        )
-                    })
-                    .catch((err) => {
-                        console.error(err)
-                        toast.push("Failed to log out!", toastErrorTheme)
-                    })
+                if (confirm("Are you sure you want to sign out?")) {
+                    signOut()
+                        .then(() => {
+                            toast.push(
+                                "Successfully logged out!",
+                                toastSuccessTheme
+                            )
+                        })
+                        .catch((err) => {
+                            console.error(err)
+                            toast.push("Failed to log out!", toastErrorTheme)
+                        })
+                }
             }}
         >
             <img
@@ -223,10 +225,14 @@
 
             <div class="login_swiper_container">
                 {#if showLoader}
-                    <div
-                        style="font-family: Cabin; color: white; position: absolute;"
-                    >
-                        LOADING...
+                    <div class="loading_container blur_bg">
+                        <div class="loading">
+                            <img
+                                src="/loadinganimcss.svg"
+                                alt="Loading icon"
+                                class="loading_icon"
+                            />
+                        </div>
                     </div>
                 {/if}
                 <Swiper
@@ -277,7 +283,7 @@
 
                             <div class="email_password_login">
                                 <div class="email_password_header">
-                                    Or sign in/register with Email
+                                    Or Sign in/Register with Email
                                 </div>
                                 <input
                                     class="email_password_input"
@@ -520,7 +526,7 @@
     .log_in_out_button {
         position: absolute;
         margin-top: 16px;
-        margin-right: 14px;
+        margin-right: calc(14px + 75px + 5px);
     }
 
     .log_in_out_button > img {
@@ -698,13 +704,48 @@
     .username_display {
         position: absolute;
         margin-top: 32px;
-        margin-right: 100px;
+        margin-right: calc(100px + 75px + 5px);
         font-family: Pusab;
         font-size: var(--font-medium);
         color: white;
         text-align: right;
         text-shadow: 0 2px 6px #000d;
         -webkit-text-stroke: 1px black;
+    }
+
+    .loading_container {
+        font-family: Cabin;
+        color: white;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        gap: 20px;
+        z-index: 10;
+        border-radius: 16px;
+        font-style: italic;
+    }
+
+    .loading {
+        width: 50%;
+    }
+
+    .loading_icon {
+        -webkit-mask-image: linear-gradient(
+            90deg,
+            #00000000 15%,
+            #fff 50%,
+            #00000000 80%
+        );
+        mask-image: linear-gradient(
+            90deg,
+            #00000000 15%,
+            #fff 50%,
+            #00000000 80%
+        );
     }
 
     .blur_bg {

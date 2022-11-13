@@ -4,7 +4,7 @@ import { toast } from "@zerodevx/svelte-toast"
 import { get, ref } from "@firebase/database"
 
 import { vec, Vector } from "../utils/vector"
-import { GdColor, type GDObject } from "./object"
+import { GdColor, getObjSettings, type GDObject } from "./object"
 import {
     deleteObjectFromLevel,
     initChunkBehavior,
@@ -15,6 +15,8 @@ import { clamp, wrap } from "../utils/math"
 
 import { MAX_ZOOM, MIN_ZOOM, toastErrorTheme } from "../const"
 import { database } from "../firebase/init"
+import { pixiApp, selectedObject } from "./app"
+import { settings } from "../settings/settings"
 
 export const LEVEL_BOUNDS = {
     start: vec(0, 0),
@@ -40,6 +42,7 @@ const BLENDING_FILTER = new PIXI.Filter(undefined, BLENDING_SHADER)
 BLENDING_FILTER.blendMode = PIXI.BLEND_MODES.ADD
 
 export class EditorNode extends PIXI.Container {
+    public currentObjectTab: string = "blocks"
     public zoomLevel: number = 0
     public cameraPos: Vector = vec(0, 0)
     public objectPreview: GDObject | null = null
@@ -61,6 +64,41 @@ export class EditorNode extends PIXI.Container {
     public world: PIXI.Container
 
     public visibleChunks: Set<string> = new Set()
+
+    toggleDecoObjects() {
+        for (
+            let x = LEVEL_BOUNDS.start.x;
+            x <= LEVEL_BOUNDS.end.x;
+            x += CHUNK_SIZE.x
+        ) {
+            for (
+                let y = LEVEL_BOUNDS.start.y;
+                y <= LEVEL_BOUNDS.end.y;
+                y += CHUNK_SIZE.y
+            ) {
+                const i = x / 20 / 30
+                const j = y / 20 / 30
+                const chunkName = `${i},${j}`
+
+                const chunk = this.world.getChildByName(chunkName) as ChunkNode
+                const selectablechunk = this.selectableWorld.getChildByName(
+                    chunkName
+                ) as ChunkNode
+                if (chunk.loaded) {
+                    for (const object of chunk.children) {
+                        const obj = getObjSettings(
+                            (object as ObjectNode).obj.id
+                        )
+                        if (!(obj.nondeco || obj.solid)) {
+                            object.visible = !settings.hideDecoObjects.enabled
+                        }
+                        selectablechunk.getChildByName(object.name).visible =
+                            object.visible
+                    }
+                }
+            }
+        }
+    }
 
     updateVisibleChunks(app: PIXI.Application) {
         const prev = this.visibleChunks
@@ -169,6 +207,7 @@ export class EditorNode extends PIXI.Container {
         this.selectableWorld.visible = willYouMakeThemSelectable
     }
     deselectObject() {
+        selectedObject.set(null)
         if (this.selectedObjectNode != null) {
             this.selectedObjectNode.getChildByName("select_box")?.destroy()
             this.selectedObjectNode.mainSprite().tint = parseInt(
@@ -188,18 +227,20 @@ export class EditorNode extends PIXI.Container {
             this.selectedObjectChunk = null
         }
     }
-    deleteSelectedObject() {
+    deleteSelectedObject(then) {
         if (this.selectedObjectNode != null) {
             let name = this.selectedObjectNode.name
             let chunk = this.selectedObjectChunk
             this.deselectObject()
-            deleteObjectFromLevel(name, chunk).catch((err) => {
-                console.log(err)
-                toast.push(
-                    `Failed to delete object! (${err.message})`,
-                    toastErrorTheme
-                )
-            })
+            deleteObjectFromLevel(name, chunk)
+                .then(then)
+                .catch((err) => {
+                    console.log(err)
+                    toast.push(
+                        `Failed to delete object! (${err.message})`,
+                        toastErrorTheme
+                    )
+                })
             return true
         }
         return false
@@ -240,6 +281,7 @@ export class EditorNode extends PIXI.Container {
         )
         const box = new PIXI.Graphics()
         box.name = "box"
+        box.visible = !settings.disableObjectOutline.enabled
 
         this.objectPreviewNode.addChild(box)
         this.addChild(this.objectPreviewNode)
@@ -432,7 +474,7 @@ export class ObjectNode extends PIXI.Container {
     detailColor: GdColor = new GdColor("ffffff", false, 1.0)
 
     constructor(
-        obj: GDObject,
+        public obj: GDObject,
         layerGroup: PIXI_LAYERS.Group,
         // tooltip will be null only on the preview object
         tooltip: TooltipNode | null
@@ -603,6 +645,7 @@ class TooltipNode extends PIXI.Graphics {
     }
 
     unHighlight() {
+        selectedObject.set(null)
         if (this.currentObject) {
             this.currentObject.getChildByName("highlight")?.destroy()
         }
@@ -610,6 +653,8 @@ class TooltipNode extends PIXI.Graphics {
 
     update(on: ObjectNode) {
         const padding = 5
+
+        selectedObject.set(on)
 
         const size = Math.min(Math.max(MIN_ZOOM - this.zoom, 6), 20)
 
@@ -620,7 +665,10 @@ class TooltipNode extends PIXI.Graphics {
             this.currentObject.getChildByName("highlight")?.destroy()
         this.currentObject = on
         const highlight = new PIXI.Graphics()
-        highlight.visible = this.show
+        highlight.visible =
+            this.show &&
+            !settings.disableObjectOutline.enabled &&
+            settings.showTooltips.enabled
         highlight.name = "highlight"
         highlight.alpha = 0.5
         highlight
@@ -678,7 +726,7 @@ class TooltipNode extends PIXI.Graphics {
 
             this.endFill()
 
-            this.visible = this.show
+            this.visible = this.show && settings.showTooltips.enabled
         }
 
         if (userPlacedCache[on.name]) {
@@ -799,6 +847,8 @@ export class DeleteObjectLabel extends PIXI.Graphics {
     }
 
     update() {
+        this.visible = settings.showDeletion.enabled
+
         const d = (Date.now() - this.spawn_time) / DLABEL_ANIM_TIME
         //console.log(d)
         this.alpha = (1 - d) * 1.25 * (Math.log(d * 5) + 1) // the sput official easing function

@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js"
 import * as PIXI_LAYERS from "@pixi/layers"
+import { get, writable, type Writable } from "svelte/store"
 
 import { vec, type Vector } from "../utils/vector"
 import { EditorNode, LEVEL_BOUNDS } from "./nodes"
@@ -9,6 +10,8 @@ import { Howl, Howler } from "howler"
 import { getColors } from "./colors"
 import { ChunkNode, CHUNK_SIZE, getHistory } from "../firebase/database"
 import { GDObject } from "./object"
+import { onMount } from "svelte"
+import { settings } from "../settings/settings"
 
 export const DRAGGING_THRESHOLD = 40.0
 
@@ -23,6 +26,23 @@ export function x_to_time(x) {
 function time_to_x(t) {
     return t * 30 * 10.3761348898
 }
+
+export enum EditorMenu {
+    Build,
+    Edit,
+    Delete,
+}
+
+export let selectedObject = writable(null)
+
+export let pixiCanvas: Writable<HTMLCanvasElement | null> = writable(null)
+
+export let pixiApp: EditorApp
+export let pixiAppStore: Writable<EditorApp | null> = writable(null)
+
+pixiAppStore.subscribe((app) => {
+    if (app) pixiApp = app
+})
 
 export function storePosState(app: EditorApp) {
     localStorage.setItem(
@@ -236,23 +256,35 @@ export class EditorApp {
                 storePosState(this)
             }
             let time
-            if (this.playingMusic) {
-                time = this.music.seek()
-                let pos = time_to_x(time)
-                this.musicLine.position.x = pos
+            if (!settings.disableBG.enabled) {
+                if (this.playingMusic) {
+                    time = this.music.seek()
+                    let pos = time_to_x(time)
+                    this.musicLine.position.x = pos
+
+                    let { bg, ground } = getColors(time)
+
+                    bgTiling.tint = rgbToHexnum(bg)
+                    this.editorNode.groundTiling.tint = rgbToHexnum(ground)
+                } else {
+                    time = x_to_time(this.editorNode.cameraPos.x)
+                }
 
                 let { bg, ground } = getColors(time)
 
                 bgTiling.tint = rgbToHexnum(bg)
                 this.editorNode.groundTiling.tint = rgbToHexnum(ground)
             } else {
-                time = x_to_time(this.editorNode.cameraPos.x)
+                if (this.playingMusic) {
+                    time = this.music.seek()
+                    let pos = time_to_x(time)
+                    this.musicLine.position.x = pos
+                } else {
+                    time = x_to_time(this.editorNode.cameraPos.x)
+                }
+                bgTiling.tint = 0x888888
+                this.editorNode.groundTiling.tint = 0x666666
             }
-
-            let { bg, ground } = getColors(time)
-
-            bgTiling.tint = rgbToHexnum(bg)
-            this.editorNode.groundTiling.tint = rgbToHexnum(ground)
         })
     }
 

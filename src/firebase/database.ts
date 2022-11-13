@@ -11,7 +11,8 @@ import {
 import { database, deleteObject, placeObject } from "./init"
 import { vec } from "../utils/vector"
 import { canEdit } from "./auth"
-import { TIMELAPSE_MODE } from "../editor/app"
+import { selectedObject, TIMELAPSE_MODE } from "../editor/app"
+import { settings } from "../settings/settings"
 
 export const CHUNK_SIZE = vec(20 * 30, 20 * 30)
 
@@ -113,19 +114,25 @@ export class ChunkNode extends PIXI.Container {
 
         this.addObject = (key: string, obj: GDObject) => {
             let objectNode = new ObjectNode(obj, layerGroup, editorNode.tooltip)
+
             objectNode.name = key
 
             objectNode.interactive = true
 
-            objectNode.on("pointerdown", (e) => {
-                // middle click
-                if (e.data.button === 1) {
-                    editorNode.selectedObjectId = obj.id
+            const objsettings = getObjSettings(obj.id)
+            if (!(objsettings.nondeco || objsettings.solid)) {
+                objectNode.visible = !settings.hideDecoObjects.enabled
+            }
 
-                    // find object tab
-                    updateObjectCategory(getObjSettings(obj.id).tab)
-                }
-            })
+            // objectNode.on("pointerdown", (e) => {
+            //     // middle click
+            //     if (e.data.button === 1) {
+            //         editorNode.selectedObjectId = obj.id
+
+            //         // find object tab
+            //         editorNode.currentObjectTab = getObjSettings(obj.id).tab
+            //     }
+            // })
 
             this.addChild(objectNode)
 
@@ -141,6 +148,8 @@ export class ChunkNode extends PIXI.Container {
             selectableSprite.height = 40 * objectNode.scale.y
             selectableSprite.parentGroup = selectableLayerGroup
 
+            selectableSprite.visible = objectNode.visible
+
             this.selectableChunk.addChild(selectableSprite)
 
             selectableSprite.interactive = true
@@ -155,6 +164,7 @@ export class ChunkNode extends PIXI.Container {
 
                     const select_box = new PIXI.Graphics()
                     select_box.name = "select_box"
+                    select_box.visible = !settings.disableObjectOutline.enabled
                     let [width, height] = [
                         objectNode.mainSprite().width,
                         objectNode.mainSprite().height,
@@ -174,6 +184,7 @@ export class ChunkNode extends PIXI.Container {
                     objectNode.addChild(select_box)
 
                     editorNode.selectedObjectNode = objectNode
+                    selectedObject.set(objectNode)
                     selectableSprite.zOrder = editorNode.nextSelectionZ
                     editorNode.nextSelectionZ -= 1
                     editorNode.selectedObjectChunk = chunkName

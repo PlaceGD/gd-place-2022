@@ -61,18 +61,19 @@ export type UserData = {
 // DfccSiqo33HLBK-xJ8nvbN4gv3xzTJC54sZIk5CWsKlhtvhTfh
 
 export const currentUserData: Writable<UserData | null> = writable(null)
+export const currentUserDisplayColor: Writable<string> = writable(null)
 
 export const signInGoogle = () => signInWithPopup(auth, googleProvider)
 export const signInGithub = () => signInWithPopup(auth, githubProvider)
 export const signInTwitter = () => signInWithPopup(auth, twitterProvider)
 
-const actionCodeSettings = {
-    url: "http://place.gd/",
-    handleCodeInApp: true,
+export const signInEmailLink = (email: string) => {
+    const actionCodeSettings = {
+        url: window.location.href,
+        handleCodeInApp: true,
+    }
+    return sendSignInLinkToEmail(auth, email, actionCodeSettings)
 }
-
-export const signInEmailLink = (email: string) =>
-    sendSignInLinkToEmail(auth, email, actionCodeSettings)
 
 export const signOut = () => logOut(auth)
 
@@ -92,6 +93,7 @@ export const canEdit = derived(
 )
 
 let userDataListener = null
+let userDisplayColorListener = null
 
 onAuthStateChanged(auth, async (user) => {
     console.log("hi")

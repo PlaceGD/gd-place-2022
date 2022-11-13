@@ -13,7 +13,7 @@ const toastErrorTheme = {
     },
 }
 
-const MAX_ZOOM = -4
+const MAX_ZOOM = -10
 const MIN_ZOOM = 24
 
 export { toastSuccessTheme, toastErrorTheme, MAX_ZOOM, MIN_ZOOM }

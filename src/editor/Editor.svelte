@@ -1,11 +1,19 @@
 <script lang="ts">
-    import { onMount } from "svelte"
     import { Howl } from "howler"
     import { pinch } from "svelte-gestures"
     import { toast } from "@zerodevx/svelte-toast"
 
     import { vec } from "../utils/vector"
-    import { DRAGGING_THRESHOLD, EditorApp, storePosState } from "./app"
+    import {
+        DRAGGING_THRESHOLD,
+        EditorApp,
+        storePosState,
+        pixiApp,
+        pixiCanvas,
+        EditorMenu,
+        pixiAppStore,
+        selectedObject,
+    } from "./app"
 
     import {
         GdColor,
@@ -21,20 +29,14 @@
     } from "../firebase/database"
     import { canEdit, currentUserData } from "../firebase/auth"
     import { MAX_ZOOM, MIN_ZOOM, toastErrorTheme } from "../const"
+    import { onMount } from "svelte"
+    import { settings, settings_writable } from "../settings/settings"
 
-    let pixiCanvas: HTMLCanvasElement
-    let pixiApp: EditorApp
-
-    enum EditorMenu {
-        Build,
-        Edit,
-        Delete,
-    }
+    $: Object.keys(settings).forEach((key) => {
+        settings[key] = $settings_writable[key]
+    })
 
     let currentMenu = EditorMenu.Build
-    let currentEditTab = 0
-
-    let currentObjectTab = "blocks"
 
     const switchMenu = (to: EditorMenu) => {
         currentMenu = to
@@ -49,24 +51,26 @@
         }
     }
 
+    onMount(() => {
+        // get editor position from local storage
+        let editorPosition: any = localStorage.getItem("editorPosition")
+        if (editorPosition) {
+            editorPosition = JSON.parse(editorPosition)
+        } else {
+            editorPosition = { x: 0, y: 0, zoom: 0 }
+        }
+
+        pixiAppStore.set(new EditorApp($pixiCanvas, editorPosition))
+        switchMenu(EditorMenu.Build)
+    })
+
+    let currentEditTab = 0
+
     // temporary way of generating categories
     let categoryList = []
     //console.log(OBJECT_SETTINGS)
     OBJECT_SETTINGS.forEach((x) => {
         if (!categoryList.includes(x.category)) categoryList.push(x.category)
-    })
-
-    // get editor position from local storage
-    let editorPosition: any = localStorage.getItem("editorPosition")
-    if (editorPosition) {
-        editorPosition = JSON.parse(editorPosition)
-    } else {
-        editorPosition = { x: 0, y: 0, zoom: 0 }
-    }
-
-    onMount(() => {
-        pixiApp = new EditorApp(pixiCanvas, editorPosition)
-        switchMenu(EditorMenu.Build)
     })
 
     let lastPlaced = 0
@@ -132,10 +136,15 @@
         }
     })
 
-    updateObjectCategory(currentObjectTab)
+    const mobileScreenQuery = window.matchMedia(
+        "(max-height: 600px) or (orientation: portrait)"
+    )
 
-    let mobile_screen =
-        window.innerWidth < window.innerHeight || window.innerHeight < 600
+    let mobileScreen = mobileScreenQuery.matches
+
+    mobileScreenQuery.addEventListener("change", () => {
+        mobileScreen = mobileScreenQuery.matches
+    })
 
     let menuIndex = 0
     function nextMenu(): EditorMenu {
@@ -146,10 +155,6 @@
 </script>
 
 <svelte:window
-    on:resize={() => {
-        mobile_screen =
-            window.innerWidth < window.innerHeight || window.innerHeight < 600
-    }}
     on:pointerup={(e) => {
         pixiApp.dragging = null
     }}
@@ -214,14 +219,12 @@
 <div class="editor">
     <canvas
         class="pixi_canvas"
-        bind:this={pixiCanvas}
+        bind:this={$pixiCanvas}
         on:pointerdown={(e) => {
-            if (e.button === 0) {
-                pixiApp.draggingThresholdReached = false
-                pixiApp.dragging = {
-                    prevCamera: pixiApp.editorNode.cameraPos.clone(),
-                    prevMouse: vec(e.pageX, e.pageY),
-                }
+            pixiApp.draggingThresholdReached = false
+            pixiApp.dragging = {
+                prevCamera: pixiApp.editorNode.cameraPos.clone(),
+                prevMouse: vec(e.pageX, e.pageY),
             }
         }}
         on:wheel={(e) => {
@@ -283,9 +286,9 @@
         }}
         on:pointerup={(e) => {
             // middle click
-            if (e.button === 1) {
-                return
-            }
+            // if (e.button === 1) {
+            //     return
+            // }
 
             pixiApp.pinching = null
             pixiApp.mousePos = vec(e.pageX, e.pageY)
@@ -373,25 +376,30 @@
         />
     </div>
 
+    {#if settings.showObjInfo.enabled && $selectedObject != null}
+        <div class="obj_info">
+            <div class="info_line">
+                <b> Object type: </b>
+                <img
+                    draggable="false"
+                    alt={$selectedObject.obj.id}
+                    style="max-height: 20px;"
+                    class="obj_tab_icon"
+                    use:lazyLoad={`/gd/objects/main/${$selectedObject.obj.id}.png`}
+                />
+            </div>
+        </div>
+    {/if}
+
     {#if $canEdit}
         <div class="menu">
             <div
                 class="side_panel menu_panel"
-                style={mobile_screen
+                style={mobileScreen
                     ? "justify-content: center; margin: 0;"
                     : ""}
             >
-                <div class="side_panel_show_hide">
-                    <button class="invis_button">
-                        <img
-                            draggable="false"
-                            src="/chevrondown.svg"
-                            alt="Close menu"
-                            class="side_panel_button_icon side_panel_show_hide_icon"
-                        />
-                    </button>
-                </div>
-                {#if mobile_screen}
+                {#if mobileScreen}
                     <!-- svelte-ignore a11y-click-events-have-key-events -->
                     <div
                         class="portrait_button_container"
@@ -551,10 +559,12 @@
                             <button
                                 class="obj_tab_button tab_button invis_button"
                                 on:click={() => {
-                                    currentObjectTab = objectTab
+                                    pixiApp.editorNode.currentObjectTab =
+                                        objectTab
                                     updateObjectCategory(objectTab)
                                 }}
-                                style={currentObjectTab == objectTab
+                                style={pixiApp?.editorNode?.currentObjectTab ==
+                                objectTab
                                     ? "height: 40px;"
                                     : "height: 32px; margin-top: 8px;"}
                             >
@@ -580,11 +590,11 @@
                                     class="obj_button invis_button wiggle_button"
                                     data-category={objectData.category}
                                     data-id={objectData.id}
-                                    style={currentObjectTab !=
-                                    objectData.category
+                                    style={pixiApp?.editorNode
+                                        .currentObjectTab != objectData.category
                                         ? "display: none !important"
                                         : ""}
-                                    id={pixiApp.editorNode.selectedObjectId ==
+                                    id={pixiApp?.editorNode.selectedObjectId ==
                                     objectData.id
                                         ? "selected_obj_button"
                                         : ""}
@@ -887,10 +897,14 @@
                     class="delete_button invis_button wiggle_button"
                     disabled={deleteButtonDisabled || deleteTimeLeft > 0}
                     on:click={() => {
-                        if (deleteTimeLeft == 0 && !deleteButtonDisabled) {
-                            pixiApp.editorNode.deleteSelectedObject()
-
-                            deleteButtonDisabled = false
+                        if (
+                            deleteTimeLeft == 0 &&
+                            !deleteButtonDisabled &&
+                            pixiApp.editorNode.selectedObjectNode != null
+                        ) {
+                            pixiApp.editorNode.deleteSelectedObject(() => {
+                                deleteButtonDisabled = false
+                            })
                         }
 
                         deleteButtonDisabled = true
@@ -1005,7 +1019,7 @@
         justify-self: center;
         opacity: 1;
         /* font-size: var(--font-large); */
-        --webkit-text-stroke: 2px black;
+
         text-shadow: 0 0 4px black;
     }
 
@@ -1157,23 +1171,6 @@
     }
     .side_panel.menu_panel > button {
         position: relative;
-    }
-    .side_panel_show_hide {
-        position: absolute;
-        top: 0;
-        transform: translateY(-100%);
-        height: 40px;
-        background-color: #000c;
-        border-radius: 16px 16px 0 0;
-        width: calc(100% - 32px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(30px);
-        -webkit-backdrop-filter: blur(30px);
-    }
-    .side_panel_show_hide_icon {
-        filter: invert(1);
     }
 
     .dots {
@@ -1373,8 +1370,33 @@
         transform: scale(1.1);
     }
 
-    .debug_objectID {
+    /* .debug_objectID {
         display: none;
+    } */
+
+    .obj_info {
+        position: absolute;
+        float: left;
+        top: 100px;
+        left: 12px;
+        width: 300px;
+        height: fit-content;
+        padding: 10px;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        background-color: #000c;
+        border-radius: 16px 16px 16px 16px;
+        color: white;
+        font-size: calc(var(--font-small) * 0.7);
+        font-family: Cabin, sans-serif;
+    }
+
+    .info_line {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 0 0 4px 0;
+        flex-direction: row;
     }
 
     .object_comment {
