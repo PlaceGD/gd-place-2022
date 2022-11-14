@@ -255,28 +255,28 @@
         }}
         on:wheel={(e) => {
             e.preventDefault()
-            // if (e.ctrlKey) {
-            let wm = pixiApp.editorNode.toWorld(
-                pixiApp.mousePos,
-                pixiApp.canvasSize()
-            )
-            let prevZoom = pixiApp.editorNode.zoom()
-            pixiApp.editorNode.zoomLevel += e.deltaY > 0 ? -1 : 1
-            pixiApp.editorNode.zoomLevel = Math.min(
-                MIN_ZOOM,
-                Math.max(MAX_ZOOM, pixiApp.editorNode.zoomLevel)
-            )
-            let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
-            pixiApp.editorNode.cameraPos = wm.plus(
-                pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
-            )
-            // } else if (e.shiftKey) {
-            //     pixiApp.editorNode.cameraPos.x += e.deltaY
-            //     pixiApp.editorNode.cameraPos.y -= e.deltaX
-            // } else {
-            //     pixiApp.editorNode.cameraPos.y -= e.deltaY
-            //     pixiApp.editorNode.cameraPos.x += e.deltaX
-            // }
+            if (e.ctrlKey) {
+                let wm = pixiApp.editorNode.toWorld(
+                    pixiApp.mousePos,
+                    pixiApp.canvasSize()
+                )
+                let prevZoom = pixiApp.editorNode.zoom()
+                pixiApp.editorNode.zoomLevel += e.deltaY > 0 ? -1 : 1
+                pixiApp.editorNode.zoomLevel = Math.min(
+                    MIN_ZOOM,
+                    Math.max(MAX_ZOOM, pixiApp.editorNode.zoomLevel)
+                )
+                let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
+                pixiApp.editorNode.cameraPos = wm.plus(
+                    pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
+                )
+            } else if (e.shiftKey) {
+                pixiApp.editorNode.cameraPos.x += e.deltaY
+                pixiApp.editorNode.cameraPos.y -= e.deltaX
+            } else {
+                pixiApp.editorNode.cameraPos.y -= e.deltaY
+                pixiApp.editorNode.cameraPos.x += e.deltaX
+            }
             // set editor position to local storage
             storePosState(pixiApp)
         }}
@@ -778,153 +778,7 @@
                             {/if}
 
                             {#if currentEditTab == 2}
-                                {#each ["Main", "Detail"] as channel}
-                                    <div class="color_header">
-                                        {channel}
-                                    </div>
-                                    {#each PALETTE as color}
-                                        <button
-                                            class="edit_button invis_button wiggle_button"
-                                            disabled={!getObjSettings(
-                                                pixiApp.editorNode.objectPreview
-                                                    ?.id
-                                            ).tintable ||
-                                                pixiApp?.editorNode
-                                                    ?.objectPreview == null ||
-                                                (channel == "Main" &&
-                                                    pixiApp?.editorNode
-                                                        ?.objectPreview
-                                                        ?.mainColor.blending &&
-                                                    color == "000000") ||
-                                                (channel == "Detail" &&
-                                                    pixiApp?.editorNode
-                                                        ?.objectPreview
-                                                        ?.detailColor
-                                                        .blending &&
-                                                    color == "000000")}
-                                            on:click={() => {
-                                                if (
-                                                    pixiApp.editorNode
-                                                        .objectPreview != null
-                                                ) {
-                                                    if (channel == "Main")
-                                                        pixiApp.editorNode.objectPreview.mainColor.hex =
-                                                            color
-                                                    else
-                                                        pixiApp.editorNode.objectPreview.detailColor.hex =
-                                                            color
-
-                                                    pixiApp.editorNode.updateObjectPreview()
-                                                }
-                                            }}
-                                        >
-                                            <div
-                                                class="color_icon"
-                                                style="background-color: {'#' +
-                                                    color};"
-                                            />
-                                        </button>
-                                    {/each}
-
-                                    <div class="blending_opacity_container">
-                                        <button
-                                            class="blending_toggle wiggle_button"
-                                            style={(channel == "Main" &&
-                                                pixiApp.editorNode.objectPreview
-                                                    ?.mainColor.blending) ||
-                                            (channel == "Detail" &&
-                                                pixiApp.editorNode.objectPreview
-                                                    ?.detailColor.blending)
-                                                ? "border: 2px solid red"
-                                                : ""}
-                                            disabled={!getObjSettings(
-                                                pixiApp.editorNode.objectPreview
-                                                    ?.id
-                                            ).tintable ||
-                                                pixiApp.editorNode
-                                                    .objectPreview == null ||
-                                                (channel == "Main" &&
-                                                    pixiApp.editorNode
-                                                        .objectPreview
-                                                        ?.mainColor.hex ==
-                                                        "000000") ||
-                                                (channel == "Detail" &&
-                                                    pixiApp.editorNode
-                                                        .objectPreview
-                                                        ?.detailColor.hex ==
-                                                        "000000")}
-                                            on:click={() => {
-                                                if (
-                                                    pixiApp.editorNode
-                                                        .objectPreview != null
-                                                ) {
-                                                    if (channel == "Main")
-                                                        pixiApp.editorNode.objectPreview.mainColor.blending =
-                                                            !pixiApp.editorNode
-                                                                .objectPreview
-                                                                .mainColor
-                                                                .blending
-                                                    else if (
-                                                        channel == "Detail"
-                                                    )
-                                                        pixiApp.editorNode.objectPreview.detailColor.blending =
-                                                            !pixiApp.editorNode
-                                                                .objectPreview
-                                                                .detailColor
-                                                                .blending
-                                                    pixiApp.editorNode.updateObjectPreview()
-                                                }
-                                            }}
-                                        >
-                                            Blending
-                                        </button>
-                                        <!-- opacity slider -->
-                                        <div class="opacity_slider_container">
-                                            <div class="edit_info_text">
-                                                Opacity
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="0.2"
-                                                max="1"
-                                                step="0.2"
-                                                value={channel == "Main"
-                                                    ? pixiApp.editorNode
-                                                          .objectPreview
-                                                          ?.mainColor.opacity
-                                                    : pixiApp.editorNode
-                                                          .objectPreview
-                                                          ?.detailColor.opacity}
-                                                class="opacity_slider"
-                                                disabled={!getObjSettings(
-                                                    pixiApp.editorNode
-                                                        .objectPreview?.id
-                                                ).tintable ||
-                                                    pixiApp?.editorNode
-                                                        ?.objectPreview == null}
-                                                on:input={(e) => {
-                                                    if (
-                                                        pixiApp.editorNode
-                                                            .objectPreview !=
-                                                        null
-                                                    ) {
-                                                        const val = e.target
-                                                        if (channel == "Main")
-                                                            pixiApp.editorNode.objectPreview.mainColor.opacity =
-                                                                val.value
-                                                        else if (
-                                                            channel == "Detail"
-                                                        )
-                                                            pixiApp.editorNode.objectPreview.detailColor.opacity =
-                                                                val.value
-
-                                                        pixiApp.editorNode.updateObjectPreview()
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                {/each}
+                                <div class="colours_tab">sada</div>
                             {/if}
                         </div>
                     </div>
@@ -1594,7 +1448,12 @@
         opacity: 0.3;
     }
 
-    .blending_opacity_container {
+    .colours_tab {
+        width: 100%;
+        height: 100%;
+    }
+
+    /* .blending_opacity_container {
         display: flex;
         gap: 8px;
         justify-content: center;
@@ -1671,7 +1530,7 @@
         background-color: none;
         border-radius: 6px;
         -webkit-appearance: none;
-    }
+    } */
 
     .playbutton {
         position: absolute;
