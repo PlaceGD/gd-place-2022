@@ -1,24 +1,9 @@
 <script lang="ts">
+    import { toGradient } from "../editor/app"
     import { currentUserData } from "../firebase/auth"
     import { getUsernameColors } from "../firebase/database"
     import { settings, saveSettings, settings_writable } from "./settings"
     let settingsOpen = false
-
-    const toGradient = (cols: number[]): string => {
-        const map = (number, inMin, inMax, outMin, outMax) => {
-            return (
-                ((number - inMin) * (outMax - outMin)) / (inMax - inMin) +
-                outMin
-            )
-        }
-
-        return `linear-gradient(to bottom, ${cols
-            .map((c, i) => {
-                return `#${c.toString(16)}\
-                ${map(i, 0, cols.length - 1, 40, 60)}%`
-            })
-            .join(",")})`
-    }
 </script>
 
 <div class="all">
@@ -50,14 +35,17 @@
                     <label for={key}> {settings[key].label} </label>
                 </div>
             {/each}
-
             {#await getUsernameColors($currentUserData?.data?.username) then colors}
                 <b> Name tag: </b>
                 <div
-                    class="username_display"
-                    style="background-image: {toGradient(colors)}"
+                    class="username_display {colors.length > 1
+                        ? 'username_gradient'
+                        : ''}"
+                    style={colors.length == 1
+                        ? `color: #${colors[0].toString(16)}`
+                        : `background-image: ${toGradient(colors)}`}
                 >
-                    {$currentUserData.data.username}
+                    {$currentUserData?.data?.username}
                 </div>
             {/await}
 
@@ -159,16 +147,20 @@
 
     .username_display {
         font-family: Cabin, sans-serif;
-        font-size: var(--font-medium);
-        -webkit-text-fill-color: transparent !important;
-        background-clip: text !important;
-        -webkit-background-clip: text !important;
+        font-size: 32px;
+
         width: 100%;
         height: fit-content;
         padding: 10px;
         display: flex;
         justify-content: center;
         align-items: center;
+    }
+
+    .username_gradient {
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+        -webkit-background-clip: text !important;
     }
 
     .settings_menu {
@@ -193,7 +185,7 @@
         background-color: #000c;
         border-radius: 16px 0px 16px 16px;
         color: white;
-        font-size: calc(var(--font-small) * 0.7);
+        font-size: 18px;
         font-family: Cabin, sans-serif;
     }
     .name_color_info {

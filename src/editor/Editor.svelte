@@ -13,6 +13,7 @@
         EditorMenu,
         pixiAppStore,
         selectedObject,
+        toGradient,
     } from "./app"
 
     import {
@@ -25,12 +26,15 @@
     import { lazyLoad } from "../lazyLoad"
     import {
         addObjectToLevel,
+        getUsernameColors,
         updateObjectCategory,
     } from "../firebase/database"
     import { canEdit, currentUserData } from "../firebase/auth"
     import { MAX_ZOOM, MIN_ZOOM, toastErrorTheme } from "../const"
     import { onMount } from "svelte"
     import { settings, settings_writable } from "../settings/settings"
+    import { object_without_properties } from "svelte/internal"
+    import { getPlacedUsername } from "./nodes"
 
     $: Object.keys(settings).forEach((key) => {
         settings[key] = $settings_writable[key]
@@ -63,10 +67,14 @@
             editorPosition = { x: 0, y: 0, zoom: 0 }
         }
 
-        editorPosition = {
-            x: parseInt(data.get("x")) * 30 || editorPosition?.x,
-            y: parseInt(data.get("y")) * 30 || editorPosition?.y,
-            zoom: parseInt(data.get("zoom")) || editorPosition?.zoom,
+        if (data.get("x")) {
+            editorPosition.x = parseInt(data.get("x")!) * 30
+        }
+        if (data.get("y")) {
+            editorPosition.y = parseInt(data.get("y")!) * 30
+        }
+        if (data.get("zoom")) {
+            editorPosition.zoom = parseInt(data.get("zoom")!)
         }
 
         pixiAppStore.set(new EditorApp($pixiCanvas, editorPosition))
@@ -301,15 +309,17 @@
             if (currentMenu == EditorMenu.Delete) {
                 return
             }
-            if (pixiApp.editorNode.tooltip.currentObject)
-                pixiApp.editorNode.tooltip.currentObject.isHovering = false
             if (pixiApp.editorNode.tooltip.visible) {
                 if (pixiApp.editorNode.tooltip) {
                     pixiApp.editorNode.tooltip.visible = false
+                    pixiApp.editorNode.tooltip.currentObject.isHovering = false
                     pixiApp.editorNode.tooltip.unHighlight()
                 }
                 return
             }
+
+            if (pixiApp.editorNode.tooltip.currentObject)
+                pixiApp.editorNode.tooltip.currentObject.isHovering = false
             if ($canEdit) {
                 if (
                     pixiApp.dragging == null ||
@@ -393,26 +403,27 @@
                     src={`/gd/objects/main/${$selectedObject.obj.id}.png`}
                 />
             </div>
-
-            {#each [[$selectedObject.obj.mainColor, "Main color"], [$selectedObject.obj.detailColor, "Detail color"]] as [color, name]}
-                <div class="info_line">
-                    <b> {name}: </b>
-                    <div class="color_info">
-                        <div
-                            class="color_circle"
-                            style="background-color: #{color['hex']}"
-                        />
-                        {#if color["blending"]}
-                            <span class="blending_info"> B </span>
-                        {/if}
-                        {#if color["opacity"] != 1.0}
-                            <span class="opacity_info">
-                                {color["opacity"] * 100}%
-                            </span>
-                        {/if}
+            {#if getObjSettings($selectedObject.obj.id).tintable}
+                {#each [[$selectedObject.obj.mainColor, "Main color"], [$selectedObject.obj.detailColor, "Detail color"]] as [color, name]}
+                    <div class="info_line">
+                        <b> {name}: </b>
+                        <div class="color_info">
+                            <div
+                                class="color_circle"
+                                style="background-color: #{color['hex']}"
+                            />
+                            {#if color["blending"]}
+                                <span class="blending_info"> B </span>
+                            {/if}
+                            {#if color["opacity"] != 1.0}
+                                <span class="opacity_info">
+                                    {color["opacity"] * 100}%
+                                </span>
+                            {/if}
+                        </div>
                     </div>
-                </div>
-            {/each}
+                {/each}
+            {/if}
 
             <div class="info_line">
                 <b> Z layer: </b>
@@ -422,6 +433,27 @@
                 <b> Rotation: </b>
                 {$selectedObject.obj.rotation}°
             </div>
+            <div class="info_line">
+                <b> Scale: </b>
+                {$selectedObject.obj.scale.toFixed(2)}
+            </div>
+            {#await getPlacedUsername($selectedObject.dbname) then username}
+                {#await getUsernameColors(username) then colors}
+                    <div class="info_line">
+                        <b> Placed by: </b>
+                        <div
+                            class="username_display {colors.length > 1
+                                ? 'username_gradient'
+                                : ''}"
+                            style={colors.length == 1
+                                ? `color: #${colors[0].toString(16)}`
+                                : `background-image: ${toGradient(colors)}`}
+                        >
+                            {username}
+                        </div>
+                    </div>
+                {/await}
+            {/await}
         </div>
     {/if}
 
@@ -710,10 +742,21 @@
 
                             <!-- extra buttons -->
                             {#if currentEditTab == 1 && pixiApp.editorNode.objectPreview != null}
-                                <t class="edit_info_text">
+                                <t
+                                    class="edit_info_text"
+                                    style="grid-column-start: 1;grid-column-end: 3;"
+                                >
                                     Z = {pixiApp.editorNode.objectPreview
                                         ?.zOrder}
                                 </t>
+
+                                {#if pixiApp.editorNode.objectPreview?.mainColor.blending || pixiApp.editorNode.objectPreview?.detailColor.blending}
+                                    <t class="edit_info_text2">
+                                        (Since one of your colors has blending,
+                                        layering might not work as expected.
+                                        This is to replicate GD behavior)
+                                    </t>
+                                {/if}
                             {/if}
 
                             {#if currentEditTab == 2}
@@ -1312,9 +1355,14 @@
         display: flex;
         justify-content: center;
         align-items: center;
-
+    }
+    .edit_info_text2 {
+        font-size: var(--font-small);
+        opacity: 0.5;
         grid-column-start: 1;
-        grid-column-end: 3;
+        grid-column-end: 6;
+        color: white;
+        font-family: Cabin, sans-serif;
     }
     .objects_grid_container {
         overflow-y: scroll;
@@ -1418,12 +1466,27 @@
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         background-color: #000c;
-        border-radius: 16px 16px 16px 16px;
+        border-radius: 0px 16px 16px 16px;
         color: white;
         font-size: calc(var(--font-small) * 0.7);
         font-family: Cabin, sans-serif;
         max-height: 30vh;
         overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .username_display {
+        font-family: Cabin, sans-serif;
+        font-size: calc(var(--font-small) * 0.7);
+        transform-origin: right;
+        transform: scale(1.5);
+        text-align: center;
+    }
+
+    .username_gradient {
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+        -webkit-background-clip: text !important;
     }
 
     .info_line {

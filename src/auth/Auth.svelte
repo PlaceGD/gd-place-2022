@@ -28,6 +28,7 @@
 
     import "swiper/css"
     import "./auth.css"
+    import { toGradient } from "../editor/app"
 
     export let loadedUserData: UserData | null
     let userProperties: UserProperties | null = null
@@ -159,22 +160,6 @@
 
     let emailInput = window.localStorage.getItem("emailForSignIn") || ""
 
-    const toGradient = (cols: number[]): string => {
-        const map = (number, inMin, inMax, outMin, outMax) => {
-            return (
-                ((number - inMin) * (outMax - outMin)) / (inMax - inMin) +
-                outMin
-            )
-        }
-
-        return `linear-gradient(to bottom, ${cols
-            .map((c, i) => {
-                return `#${c.toString(16)}\
-                ${map(i, 0, cols.length - 1, 20, 80)}%`
-            })
-            .join(",")})`
-    }
-
     function complement(colors) {
         // returns "black" or "white"
         const rbg = colors.map((color) => [
@@ -238,18 +223,20 @@
                 alt="logout button"
             />
         </button>
-        {#if loadedUserData.data != null && typeof loadedUserData.data != "string"}
-            {#await getUsernameColors(loadedUserData.data.username) then colors}
-                <div
-                    class="username_display"
-                    style="background-image: {toGradient(
-                        colors
-                    )};-webkit-text-stroke: {complement(colors)};"
-                >
-                    {loadedUserData.data.username}
-                </div>
-            {/await}
-        {/if}
+        {#await getUsernameColors($currentUserData?.data?.username) then colors}
+            <div
+                class="username_display {colors.length > 1
+                    ? 'username_gradient'
+                    : ''}"
+                style="{colors.length == 1
+                    ? `color: #${colors[0].toString(16)}`
+                    : `background-image: ${toGradient(
+                          colors
+                      )}`};-webkit-text-stroke: {complement(colors)};"
+            >
+                {loadedUserData.data.username}
+            </div>
+        {/await}
     {/if}
 
     {#if loginPopupVisible}
@@ -753,12 +740,16 @@
         margin-right: calc(100px + 75px + 5px);
         font-family: Pusab;
         font-size: var(--font-medium);
-        -webkit-text-fill-color: transparent !important;
+
+        text-align: right;
+        -webkit-filter: drop-shadow(2px 2px 10px rgba(0, 0, 0, 0.9));
+        filter: drop-shadow(2px 2px 10px rgba(0, 0, 0, 0.9));
+    }
+
+    .username_gradient {
+        -webkit-text-fill-color: rgba(255, 255, 255, 0.1) !important;
         background-clip: text !important;
         -webkit-background-clip: text !important;
-        text-align: right;
-        -webkit-filter: drop-shadow(5px 5px 10px #0006);
-        filter: drop-shadow(5px 5px 10px #0006);
     }
 
     .loading_container {

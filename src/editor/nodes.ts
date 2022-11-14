@@ -489,11 +489,13 @@ export class ObjectNode extends PIXI.Container {
         let mainSprite = new PIXI.Sprite(
             PIXI.Texture.from(`/gd/objects/main/${obj.id}.png`)
         )
+
+        this.parentGroup = layerGroup
         mainSprite.interactive = true
 
         mainSprite.anchor.set(0.5)
         mainSprite.scale.set(0.25, -0.25)
-        mainSprite.parentGroup = layerGroup
+
         this.addChild(mainSprite)
 
         const showTooltip = () => {
@@ -501,7 +503,6 @@ export class ObjectNode extends PIXI.Container {
 
             let t = setTimeout(() => {
                 if (this.isHovering && tooltip) {
-                    console.log(this)
                     tooltip.update(this)
                 }
 
@@ -525,7 +526,6 @@ export class ObjectNode extends PIXI.Container {
 
         detailSprite.anchor.set(0.5)
         detailSprite.scale.set(0.25, -0.25)
-        detailSprite.parentGroup = layerGroup
 
         for (let sprite of [mainSprite, detailSprite]) {
             sprite.on("mouseover", showTooltip)
@@ -558,19 +558,23 @@ export class ObjectNode extends PIXI.Container {
         if (obj.mainColor.hex) this.setMainColor(obj.mainColor)
         if (obj.detailColor.hex) this.setDetailColor(obj.detailColor)
 
+        const BLENDING_LAYER_CUTOFF = 45
+
+        if (obj.mainColor.blending || obj.detailColor.blending) {
+            this.zOrder = obj.zOrder > BLENDING_LAYER_CUTOFF ? 120 : -1
+        } else {
+            this.zOrder = obj.zOrder
+        }
+
         if (obj.mainColor.blending) {
             this.mainSprite().filters = [BLENDING_FILTER]
-            this.mainSprite().zOrder = 120
         } else {
             this.mainSprite().filters = []
-            this.mainSprite().zOrder = obj.zOrder
         }
         if (obj.detailColor.blending) {
             this.detailSprite().filters = [BLENDING_FILTER]
-            this.detailSprite().zOrder = 120
         } else {
             this.detailSprite().filters = []
-            this.detailSprite().zOrder = obj.zOrder
         }
 
         if (obj.mainColor.opacity)
@@ -685,7 +689,8 @@ class TooltipNode extends PIXI.Graphics {
                 on.mainSprite().height + 4
             )
         this.currentObject.addChild(highlight)
-        const show = async (username) => {
+
+        getPlacedUsername(on.name).then(async (username) => {
             // check for color
             let color = await getUsernameColors(username)
 
@@ -711,25 +716,7 @@ class TooltipNode extends PIXI.Graphics {
             this.endFill()
 
             this.visible = this.show && settings.showTooltips.enabled
-        }
-
-        if (userPlacedCache[on.name]) {
-            show(userPlacedCache[on.name])
-        } else {
-            get(ref(database, `userPlaced/${on.name}`))
-                .then((username) => {
-                    userPlacedCache[on.name] = username.val()
-                    show(username.val())
-                })
-                .catch((err) => {
-                    console.error(err)
-
-                    toast.push(
-                        `Failed to get username! (${err.message})`,
-                        toastErrorTheme
-                    )
-                })
-        }
+        })
     }
 }
 
@@ -822,5 +809,14 @@ export class DeleteObjectLabel extends PIXI.Graphics {
             return true
         }
         return false
+    }
+}
+export async function getPlacedUsername(dbname: string) {
+    if (userPlacedCache[dbname]) {
+        return userPlacedCache[dbname]
+    } else {
+        const username = await get(ref(database, `userPlaced/${dbname}`))
+        userPlacedCache[dbname] = username.val()
+        return username.val()
     }
 }

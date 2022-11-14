@@ -13,6 +13,20 @@ import { ChunkNode, CHUNK_SIZE, getHistory } from "../firebase/database"
 import { GDObject } from "./object"
 import { settings } from "../settings/settings"
 
+export const toGradient = (cols: number[]): string => {
+    if (cols.length == 1) return `#${cols[0].toString(16)}`
+    const map = (number, inMin, inMax, outMin, outMax) => {
+        return ((number - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin
+    }
+
+    return `linear-gradient(to bottom, ${cols
+        .map((c, i) => {
+            return `#${c.toString(16)}\
+            ${map(i, 0, cols.length - 1, 40, 60)}%`
+        })
+        .join(",")})`
+}
+
 export const DRAGGING_THRESHOLD = 40.0
 
 export const TIMELAPSE_MODE = false
