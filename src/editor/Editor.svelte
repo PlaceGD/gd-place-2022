@@ -42,6 +42,16 @@
 
     let currentMenu = EditorMenu.Build
 
+    $: if ($settings_writable.hideDecoObjects.enabled && pixiApp?.editorNode) {
+        const obj = getObjSettings(pixiApp.editorNode.selectedObjectId)
+
+        if (!(obj.solid || obj.nonDeco)) {
+            pixiApp.editorNode.objectPreview &&
+                pixiApp.editorNode.removePreview()
+            pixiApp.editorNode.selectedObjectId = 1
+        }
+    }
+
     const switchMenu = (to: EditorMenu) => {
         currentMenu = to
         if (currentMenu == EditorMenu.Delete) {
@@ -668,6 +678,12 @@
                                         pixiApp.editorNode.selectedObjectId =
                                             objectData.id
                                     }}
+                                    disabled={$settings_writable.hideDecoObjects
+                                        .enabled &&
+                                        !(
+                                            objectData.nonDeco ||
+                                            objectData.solid
+                                        )}
                                 >
                                     <img
                                         draggable="false"
@@ -1446,14 +1462,18 @@
         position: relative;
     }
 
+    .obj_button:disabled {
+        opacity: 0.3;
+    }
+
     #selected_obj_button {
         outline: 3px solid #a2ffa2;
         transform: scale(1.1);
     }
 
-    .debug_objectID {
+    /* .debug_objectID {
         display: none;
-    }
+    } */
 
     .obj_info {
         position: absolute;

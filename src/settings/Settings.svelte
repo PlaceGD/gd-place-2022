@@ -50,8 +50,8 @@
             {/await}
 
             <i class="name_color_info">
-                <b> Colored names: </b> if you want a different color on your
-                name tag, send the colors you want in a donation in
+                <b> Colored names: </b> if you want your name tag to be a
+                different color, send the color you want in a donation in
                 <a href="https://www.youtube.com/c/Spu7Nix">
                     Spu7Nix's stream</a
                 >!

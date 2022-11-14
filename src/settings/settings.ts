@@ -20,13 +20,20 @@ const DEAFULT_SETTINGS = {
     },
     disableObjectOutline: {
         enabled: false,
-        label: "Hide object outline",
+        label: "Hide selection outline",
     },
     hideDecoObjects: {
         enabled: false,
         label: "Hide decoration objects",
         cb: () => {
             pixiApp?.editorNode?.toggleDecoObjects()
+        },
+    },
+    showDanger: {
+        enabled: false,
+        label: "Reveal dangerous objects",
+        cb: () => {
+            pixiApp?.editorNode?.toggleDangerObjects()
         },
     },
     hideMenu: {

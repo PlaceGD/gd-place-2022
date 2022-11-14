@@ -7,6 +7,7 @@ import {
     EditorNode,
     LEVEL_BOUNDS,
     ObjectNode,
+    resetObjectColors,
 } from "../editor/nodes"
 import { database, deleteObject, placeObject } from "./init"
 import { vec } from "../utils/vector"
@@ -141,13 +142,18 @@ export class ChunkNode extends PIXI.Container {
         this.addObject = (key: string, obj: GDObject) => {
             let objectNode = new ObjectNode(obj, layerGroup, editorNode.tooltip)
 
+            resetObjectColors(objectNode)
+
             objectNode.name = key
 
             objectNode.interactive = true
 
             const objsettings = getObjSettings(obj.id)
-            if (!(objsettings.nondeco || objsettings.solid)) {
-                objectNode.visible = !settings.hideDecoObjects.enabled
+            if (
+                !(objsettings.nondeco || objsettings.solid) &&
+                settings.hideDecoObjects.enabled
+            ) {
+                objectNode.visible = false
             }
 
             // objectNode.on("pointerdown", (e) => {
@@ -175,6 +181,13 @@ export class ChunkNode extends PIXI.Container {
             selectableSprite.parentGroup = selectableLayerGroup
 
             selectableSprite.visible = objectNode.visible
+
+            if (
+                !(objsettings.danger || objsettings.solid) &&
+                settings.showDanger.enabled
+            ) {
+                selectableSprite.visible = false
+            }
 
             this.selectableChunk.addChild(selectableSprite)
 

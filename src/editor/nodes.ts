@@ -106,6 +106,38 @@ export class EditorNode extends PIXI.Container {
         }
     }
 
+    toggleDangerObjects() {
+        for (
+            let x = LEVEL_BOUNDS.start.x;
+            x <= LEVEL_BOUNDS.end.x;
+            x += CHUNK_SIZE.x
+        ) {
+            for (
+                let y = LEVEL_BOUNDS.start.y;
+                y <= LEVEL_BOUNDS.end.y;
+                y += CHUNK_SIZE.y
+            ) {
+                const i = x / 20 / 30
+                const j = y / 20 / 30
+                const chunkName = `${i},${j}`
+
+                const chunk = this.world.getChildByName(chunkName) as ChunkNode
+                const selectablechunk = this.selectableWorld.getChildByName(
+                    chunkName
+                ) as ChunkNode
+                if (chunk.loaded) {
+                    for (const object of chunk.children) {
+                        const o = object as ObjectNode
+                        resetObjectColors(o)
+
+                        selectablechunk.getChildByName(object.name).visible =
+                            object.visible
+                    }
+                }
+            }
+        }
+    }
+
     updateVisibleChunks(app: PIXI.Application) {
         const prev = this.visibleChunks
 
@@ -216,19 +248,7 @@ export class EditorNode extends PIXI.Container {
         if (this.selectedObjectNode != null) {
             selectedObject.set(null)
             this.selectedObjectNode.getChildByName("select_box")?.destroy()
-            this.selectedObjectNode.mainSprite().tint = parseInt(
-                this.selectedObjectNode.mainColor.hex,
-                16
-            )
-            this.selectedObjectNode.detailSprite().tint = parseInt(
-                this.selectedObjectNode.detailColor.hex,
-                16
-            )
-
-            this.selectedObjectNode.mainSprite().alpha =
-                this.selectedObjectNode.mainColor.opacity
-            this.selectedObjectNode.detailSprite().alpha =
-                this.selectedObjectNode.detailColor.opacity
+            resetObjectColors(this.selectedObjectNode)
             this.selectedObjectNode = null
             this.selectedObjectChunk = null
         }
@@ -811,6 +831,28 @@ export class DeleteObjectLabel extends PIXI.Graphics {
         return false
     }
 }
+export function resetObjectColors(o: ObjectNode) {
+    const obj = getObjSettings(o.obj.id)
+
+    if (settings.showDanger.enabled) {
+        if (!(obj.danger || obj.solid)) {
+            o.mainSprite().alpha = o.mainColor.opacity * 0.1
+            o.detailSprite().alpha = o.detailColor.opacity * 0.4
+        } else {
+            o.mainSprite().tint = 0xff0000
+            o.detailSprite().tint = 0xff0000
+            o.mainSprite().alpha = 1
+            o.detailSprite().alpha = 1
+        }
+    } else {
+        o.mainSprite().tint = parseInt(o.mainColor.hex, 16)
+        o.detailSprite().tint = parseInt(o.detailColor.hex, 16)
+
+        o.mainSprite().alpha = o.mainColor.opacity
+        o.detailSprite().alpha = o.detailColor.opacity
+    }
+}
+
 export async function getPlacedUsername(dbname: string) {
     if (userPlacedCache[dbname]) {
         return userPlacedCache[dbname]
