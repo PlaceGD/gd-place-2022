@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { transform } from "svelte-motion"
     import { toGradient } from "../editor/app"
     import { currentUserData } from "../firebase/auth"
     import { getUsernameColors } from "../firebase/database"
@@ -19,45 +20,72 @@
             alt="settings button"
         />
     </button>
-    {#if settingsOpen}
-        <div class="settings_menu">
-            {#each Object.keys(settings) as key}
-                <div class="onoffsetting">
-                    <input
-                        type="checkbox"
-                        id={key}
-                        bind:checked={$settings_writable[key].enabled}
-                        on:change={(event) => {
-                            saveSettings()
-                            settings[key].cb && settings[key].cb(event)
-                        }}
-                    />
-                    <label for={key}> {settings[key].label} </label>
-                </div>
-            {/each}
-            {#await getUsernameColors($currentUserData?.data?.username) then colors}
-                <b> Name tag: </b>
-                <div
-                    class="username_display {colors.length > 1
-                        ? 'username_gradient'
-                        : ''}"
-                    style={colors.length == 1
-                        ? `color: #${colors[0].toString(16)}`
-                        : `background-image: ${toGradient(colors)}`}
-                >
-                    {$currentUserData?.data?.username}
-                </div>
-            {/await}
 
-            <i class="name_color_info">
-                <b> Colored names: </b> if you want your name tag to be a
-                different color, send the color you want in a donation in
-                <a href="https://www.youtube.com/c/Spu7Nix">
-                    Spu7Nix's stream</a
-                >!
-            </i>
-        </div>
-    {/if}
+    <div
+        class="settings_menu"
+        style:transform={settingsOpen ? "" : "scaleY(0)"}
+    >
+        {#each Object.keys(settings) as key, i}
+            <div
+                class="onoffsetting"
+                style:opacity={settingsOpen ? 1 : 0}
+                style:transform={settingsOpen ? "" : `translateY(-20px)`}
+                style:transition="ease-out 0.2s"
+                style:transition-delay={settingsOpen
+                    ? `${0.1 + i * 0.03}s`
+                    : "0s"}
+            >
+                <input
+                    type="checkbox"
+                    id={key}
+                    bind:checked={$settings_writable[key].enabled}
+                    on:change={(event) => {
+                        saveSettings()
+                        settings[key].cb && settings[key].cb(event)
+                    }}
+                />
+                <label for={key}> {settings[key].label} </label>
+            </div>
+        {/each}
+        {#if $currentUserData?.data?.username}
+            <div
+                style:opacity={settingsOpen ? 1 : 0}
+                style:transform={settingsOpen ? "" : `translateY(-10px)`}
+                style:transition="ease-out 0.2s"
+                style:transition-delay={settingsOpen
+                    ? `${0.13 + Object.keys(settings).length * 0.03}s`
+                    : "0s"}
+            >
+                {#await getUsernameColors($currentUserData?.data?.username) then colors}
+                    <b> Name tag: </b>
+                    <div
+                        class="username_display {colors.length > 1
+                            ? 'username_gradient'
+                            : ''}"
+                        style={colors.length == 1
+                            ? `color: #${colors[0].toString(16)}`
+                            : `background-image: ${toGradient(colors)}`}
+                    >
+                        {$currentUserData?.data?.username}
+                    </div>
+                {/await}
+            </div>
+        {/if}
+
+        <i
+            class="name_color_info"
+            style:opacity={settingsOpen ? 1 : 0}
+            style:transform={settingsOpen ? "" : `translateY(-10px)`}
+            style:transition="ease-out 0.2s"
+            style:transition-delay={settingsOpen
+                ? `${0.2 + Object.keys(settings).length * 0.03}s`
+                : "0s"}
+        >
+            <b> Colored names: </b> if you want your name tag to be a different
+            color, send the color you want in a donation in
+            <a href="https://www.youtube.com/c/Spu7Nix"> Spu7Nix's stream</a>!
+        </i>
+    </div>
 </div>
 
 <style>
@@ -187,6 +215,8 @@
         color: white;
         font-size: 18px;
         font-family: Cabin, sans-serif;
+        transform-origin: top;
+        transition: ease-in-out 0.3s;
     }
     .name_color_info {
         padding-top: 15px;
