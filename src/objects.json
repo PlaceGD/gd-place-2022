@@ -357,4 +357,5 @@
     { "id": 1883, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
     { "id": 1884, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
     { "id": 1885, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" }
+    
 ]

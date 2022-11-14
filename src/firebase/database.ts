@@ -1,4 +1,10 @@
-import { ref, onChildAdded, onChildRemoved, get } from "firebase/database"
+import {
+    ref,
+    onChildAdded,
+    onChildRemoved,
+    get,
+    onValue,
+} from "firebase/database"
 import * as PIXI from "pixi.js"
 import type * as PIXI_LAYERS from "@pixi/layers"
 import { GDObject, getObjSettings } from "../editor/object"
@@ -14,12 +20,27 @@ import { vec } from "../utils/vector"
 import { canEdit } from "./auth"
 import { selectedObject, TIMELAPSE_MODE } from "../editor/app"
 import { settings } from "../settings/settings"
+import { writable } from "svelte/store"
 
 export const CHUNK_SIZE = vec(20 * 30, 20 * 30)
 
 let canEditValue = false
 canEdit.subscribe((value) => {
     canEditValue = value
+})
+
+export let placeTimerMax = writable(0)
+
+onValue(ref(database, "placeTimer"), (snapshot) => {
+    placeTimerMax.set(snapshot.val())
+    console.log("placeTimer", snapshot.val())
+})
+
+export let deleteTimerMax = writable(0)
+
+onValue(ref(database, "deleteTimer"), (snapshot) => {
+    deleteTimerMax.set(snapshot.val())
+    console.log("deleteTimer", snapshot.val())
 })
 
 export async function getHistory() {

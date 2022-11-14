@@ -26,8 +26,6 @@ export const getObjSettings = (id: number) => objects[idMapping[id]]
 
 initializeApp()
 
-const timer = 1 * 60
-
 export const placeObject = functions.https.onCall(async (data, request) => {
     // check that user is authenticated
     if (!request.auth) {
@@ -44,6 +42,9 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     const lastPlacedRef = db.ref(`/userData/${uid}/lastPlaced`)
     const lastPlaced = (await lastPlacedRef.once("value")).val()
     const now = Date.now()
+
+    const timer = (await db.ref("placeTimer").once("value")).val()
+
     if (lastPlaced && now - lastPlaced < (timer - 5) * 1000) {
         throw new functions.https.HttpsError(
             "resource-exhausted",
@@ -119,6 +120,9 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
     const userData = (await userDataRef.once("value")).val()
     const lastDeleted = userData.lastDeleted
     const now = Date.now()
+
+    const timer = (await db.ref("deleteTimer").once("value")).val()
+
     if (lastDeleted && now - lastDeleted < (timer - 5) * 1000) {
         throw new functions.https.HttpsError(
             "resource-exhausted",

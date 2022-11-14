@@ -26,7 +26,9 @@
     import { lazyLoad } from "../lazyLoad"
     import {
         addObjectToLevel,
+        deleteTimerMax,
         getUsernameColors,
+        placeTimerMax,
         updateObjectCategory,
     } from "../firebase/database"
     import { canEdit, currentUserData } from "../firebase/auth"
@@ -35,6 +37,8 @@
     import { settings, settings_writable } from "../settings/settings"
     import { object_without_properties } from "svelte/internal"
     import { getPlacedUsername } from "./nodes"
+    import { get, onValue, ref } from "firebase/database"
+    import { database } from "../firebase/init"
 
     $: Object.keys(settings).forEach((key) => {
         settings[key] = $settings_writable[key]
@@ -118,12 +122,13 @@
         src: ["/gd/world/achievement_01.ogg"],
     })
 
-    const timer = 1 * 60
-
     const updateTimeLeft = () => {
         const now = Date.now()
-        placeTimeLeft = Math.max(timer - (now - lastPlaced) / 1000, 0)
-        deleteTimeLeft = Math.max(timer - (now - lastDeleted) / 1000, 0)
+        placeTimeLeft = Math.max($placeTimerMax - (now - lastPlaced) / 1000, 0)
+        deleteTimeLeft = Math.max(
+            $deleteTimerMax - (now - lastDeleted) / 1000,
+            0
+        )
     }
 
     setInterval(() => {
@@ -138,21 +143,18 @@
             if (typeof value.data != "string" && value.data != null) {
                 lastDeleted = value.data.lastDeleted
                 lastPlaced = value.data.lastPlaced
-                if (timer * 1000 - (Date.now() - lastPlaced) > 0) {
+                if ($placeTimerMax * 1000 - (Date.now() - lastPlaced) > 0) {
                     let t = setTimeout(() => {
                         placeTimerSound.play()
                         clearTimeout(t)
-                    }, Math.max(timer * 1000 - (Date.now() - lastPlaced), 0))
-                    console.log(
-                        Math.max(timer * 1000 - (Date.now() - lastPlaced), 0)
-                    )
+                    }, Math.max($placeTimerMax * 1000 - (Date.now() - lastPlaced), 0))
                 }
 
-                if (timer * 1000 - (Date.now() - lastDeleted) > 0) {
+                if ($deleteTimerMax * 1000 - (Date.now() - lastDeleted) > 0) {
                     let t2 = setTimeout(() => {
                         deleteTimerSound.play()
                         clearTimeout(t2)
-                    }, Math.max(timer * 1000 - (Date.now() - lastDeleted), 0))
+                    }, Math.max($deleteTimerMax * 1000 - (Date.now() - lastDeleted), 0))
                 }
 
                 updateTimeLeft()
@@ -499,7 +501,7 @@
                                 <div
                                     class="radial_timer"
                                     style:background={gradientFunc(
-                                        1 - placeTimeLeft / timer
+                                        1 - placeTimeLeft / $placeTimerMax
                                     )}
                                 />
                             {/if}
@@ -536,7 +538,7 @@
                                 <div
                                     class="radial_timer"
                                     style:background={gradientFunc(
-                                        1 - deleteTimeLeft / timer
+                                        1 - deleteTimeLeft / $deleteTimerMax
                                     )}
                                 />
                             {/if}
@@ -579,7 +581,7 @@
                             <div
                                 class="radial_timer"
                                 style:background={gradientFunc(
-                                    1 - placeTimeLeft / timer
+                                    1 - placeTimeLeft / $placeTimerMax
                                 )}
                             />
                         {/if}
@@ -620,7 +622,7 @@
                             <div
                                 class="radial_timer"
                                 style:background={gradientFunc(
-                                    1 - deleteTimeLeft / timer
+                                    1 - deleteTimeLeft / $deleteTimerMax
                                 )}
                             />
                         {/if}
