@@ -1339,8 +1339,8 @@
     }
 
     .editor {
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        height: inherit;
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
@@ -1349,8 +1349,8 @@
     }
     .editor > canvas {
         position: fixed;
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        height: 100%;
         display: inline-block;
     }
 
@@ -1369,7 +1369,6 @@
         padding: var(--grid-gap);
 
         position: fixed;
-        bottom: 0;
     }
 
     .login_requirement_message {

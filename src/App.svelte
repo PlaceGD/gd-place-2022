@@ -7,6 +7,7 @@
     import { currentUserData } from "./firebase/auth"
     import { isEmailVerification } from "./firebase/auth"
     import Countdown from "./countdown/Countdown.svelte"
+    import Page from "./eventdone/Page.svelte"
 
     let emailSuccess = "loading"
 
@@ -28,6 +29,7 @@
 <SvelteToast options={{ reversed: true, intro: { y: 192 } }} />
 
 <!-- <Countdown /> -->
+<!-- <Page /> -->
 
 {#if isEmailVerification}
     <div class="email">
