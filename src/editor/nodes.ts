@@ -18,6 +18,7 @@ import { MAX_ZOOM, MIN_ZOOM, toastErrorTheme } from "../const"
 import { database } from "../firebase/init"
 import { pixiApp, selectedObject } from "./app"
 import { settings } from "../settings/settings"
+import { CountDownNode } from "../countdown/countdown"
 
 export const LEVEL_BOUNDS = {
     start: vec(0, 0),
@@ -346,6 +347,10 @@ export class EditorNode extends PIXI.Container {
         this.addChild(this.world)
         this.world.sortableChildren = true
 
+        // console.log("aaaaaaaaa", app, this)
+        const countDown = new CountDownNode(app, this)
+        this.addChild(countDown)
+
         this.selectableWorld = new PIXI.Container()
         this.addChild(this.selectableWorld)
         this.selectableWorld.sortableChildren = true
@@ -365,6 +370,19 @@ export class EditorNode extends PIXI.Container {
         let groundLine = PIXI.Sprite.from("/gd/world/ground_line.png")
         groundLine.anchor.set(0.5, 1)
         this.addChild(groundLine)
+
+        // invisible mask before level bounds
+        const mask = new PIXI.Graphics()
+        mask.drawRect(
+            LEVEL_BOUNDS.start.x,
+            LEVEL_BOUNDS.end.y - 10,
+            LEVEL_BOUNDS.end.x - LEVEL_BOUNDS.start.x,
+            LEVEL_BOUNDS.start.y - LEVEL_BOUNDS.end.y
+        )
+        mask.endFill()
+        this.addChild(mask)
+
+        groundLine.mask = mask
 
         this.layerGroup = new PIXI_LAYERS.Group(0, true)
         this.addChild(new PIXI_LAYERS.Layer(this.layerGroup))
@@ -500,6 +518,7 @@ export class ObjectNode extends PIXI.Container {
     detailColor: GdColor = new GdColor("ffffff", false, 1.0)
 
     constructor(
+        /// drean iubstaity
         public obj: GDObject,
         layerGroup: PIXI_LAYERS.Group,
         // tooltip will be null only on the preview object

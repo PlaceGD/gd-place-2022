@@ -95,7 +95,20 @@
         switchMenu(EditorMenu.Build)
     })
 
-    let currentEditTab = 0
+    enum EditTab {
+        Transform,
+        Layers,
+        Colors,
+    }
+
+    let currentEditTab = EditTab.Transform
+
+    enum ColorChannel {
+        Main,
+        Detail,
+    }
+
+    let currentChannel = ColorChannel.Main
 
     // temporary way of generating categories
     let categoryList = []
@@ -255,28 +268,28 @@
         }}
         on:wheel={(e) => {
             e.preventDefault()
-            if (e.ctrlKey) {
-                let wm = pixiApp.editorNode.toWorld(
-                    pixiApp.mousePos,
-                    pixiApp.canvasSize()
-                )
-                let prevZoom = pixiApp.editorNode.zoom()
-                pixiApp.editorNode.zoomLevel += e.deltaY > 0 ? -1 : 1
-                pixiApp.editorNode.zoomLevel = Math.min(
-                    MIN_ZOOM,
-                    Math.max(MAX_ZOOM, pixiApp.editorNode.zoomLevel)
-                )
-                let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
-                pixiApp.editorNode.cameraPos = wm.plus(
-                    pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
-                )
-            } else if (e.shiftKey) {
-                pixiApp.editorNode.cameraPos.x += e.deltaY
-                pixiApp.editorNode.cameraPos.y -= e.deltaX
-            } else {
-                pixiApp.editorNode.cameraPos.y -= e.deltaY
-                pixiApp.editorNode.cameraPos.x += e.deltaX
-            }
+            // if (e.ctrlKey) {
+            let wm = pixiApp.editorNode.toWorld(
+                pixiApp.mousePos,
+                pixiApp.canvasSize()
+            )
+            let prevZoom = pixiApp.editorNode.zoom()
+            pixiApp.editorNode.zoomLevel += e.deltaY > 0 ? -1 : 1
+            pixiApp.editorNode.zoomLevel = Math.min(
+                MIN_ZOOM,
+                Math.max(MAX_ZOOM, pixiApp.editorNode.zoomLevel)
+            )
+            let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
+            pixiApp.editorNode.cameraPos = wm.plus(
+                pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
+            )
+            // } else if (e.shiftKey) {
+            //     pixiApp.editorNode.cameraPos.x += e.deltaY
+            //     pixiApp.editorNode.cameraPos.y -= e.deltaX
+            // } else {
+            //     pixiApp.editorNode.cameraPos.y -= e.deltaY
+            //     pixiApp.editorNode.cameraPos.x += e.deltaX
+            // }
             // set editor position to local storage
             storePosState(pixiApp)
         }}
@@ -663,46 +676,51 @@
                     </div>
                     <div class="objects_grid_container">
                         <div class="objects_grid" id="objects_list">
-                            {#each OBJECT_SETTINGS as objectData}
-                                <button
-                                    class="obj_button invis_button wiggle_button"
-                                    data-category={objectData.category}
-                                    data-id={objectData.id}
-                                    style={pixiApp?.editorNode
-                                        .currentObjectTab != objectData.category
-                                        ? "display: none !important"
-                                        : ""}
-                                    id={pixiApp?.editorNode.selectedObjectId ==
-                                    objectData.id
-                                        ? "selected_obj_button"
-                                        : ""}
-                                    on:click={() => {
-                                        pixiApp.editorNode.selectedObjectId =
-                                            objectData.id
-                                    }}
-                                    disabled={$settings_writable.hideDecoObjects
-                                        .enabled &&
-                                        !(
-                                            objectData.nonDeco ||
-                                            objectData.solid
-                                        )}
-                                >
-                                    <img
-                                        draggable="false"
-                                        alt=""
-                                        class="button_icon"
-                                        use:lazyLoad={`/gd/objects/main/${objectData.id}.png`}
-                                    />
-                                    {#if objectData.comment}
-                                        <p class="object_comment">
-                                            {objectData.comment}
+                            <div class="obj_buttons_container grid_padding">
+                                {#each OBJECT_SETTINGS as objectData}
+                                    <button
+                                        class="obj_button invis_button wiggle_button"
+                                        data-category={objectData.category}
+                                        data-id={objectData.id}
+                                        style={pixiApp?.editorNode
+                                            .currentObjectTab !=
+                                        objectData.category
+                                            ? "display: none !important"
+                                            : ""}
+                                        id={pixiApp?.editorNode
+                                            .selectedObjectId == objectData.id
+                                            ? "selected_obj_button"
+                                            : ""}
+                                        on:click={() => {
+                                            pixiApp.editorNode.selectedObjectId =
+                                                objectData.id
+                                        }}
+                                        disabled={$settings_writable
+                                            .hideDecoObjects.enabled &&
+                                            !(
+                                                objectData.nonDeco ||
+                                                objectData.solid
+                                            )}
+                                    >
+                                        <img
+                                            draggable="false"
+                                            alt=""
+                                            class="button_icon"
+                                            use:lazyLoad={`/gd/objects/main/${objectData.id}.png`}
+                                        />
+                                        {#if objectData.comment}
+                                            <p class="object_comment">
+                                                {objectData.comment}
+                                            </p>
+                                        {/if}
+                                        <p
+                                            class="debug_objectID object_comment"
+                                        >
+                                            {objectData.id}
                                         </p>
-                                    {/if}
-                                    <p class="debug_objectID object_comment">
-                                        {objectData.id}
-                                    </p>
-                                </button>
-                            {/each}
+                                    </button>
+                                {/each}
+                            </div>
                         </div>
                     </div>
                 {:else if currentMenu == EditorMenu.Edit}
@@ -710,7 +728,7 @@
                         {#each EDIT_BUTTONS as editTab, i}
                             <button
                                 class="tab_button invis_button"
-                                style={currentEditTab == i
+                                style={currentEditTab === i
                                     ? "height: 40px;"
                                     : "height: 32px; margin-top: 8px;"}
                                 on:click={() => {
@@ -723,62 +741,315 @@
                     </div>
                     <div class="objects_grid_container">
                         <div class="objects_grid">
-                            {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
-                                <button
-                                    class="edit_button invis_button wiggle_button"
-                                    disabled={pixiApp.editorNode
-                                        .objectPreview == null ||
-                                        (["cw_5", "ccw_5"].includes(
-                                            editButton["image"]
-                                        ) &&
-                                            getObjSettings(
-                                                pixiApp.editorNode.objectPreview
-                                                    ?.id
-                                            ).solid)}
-                                    on:click={() => {
-                                        if (
-                                            pixiApp.editorNode.objectPreview !=
-                                            null
-                                        ) {
-                                            editButton.cb(
-                                                pixiApp.editorNode.objectPreview
-                                            )
+                            {#if currentEditTab === EditTab.Transform}
+                                <div class="obj_buttons_container grid_padding">
+                                    {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
+                                        <button
+                                            class="edit_button invis_button wiggle_button"
+                                            disabled={pixiApp.editorNode
+                                                .objectPreview == null ||
+                                                (["cw_5", "ccw_5"].includes(
+                                                    editButton["image"]
+                                                ) &&
+                                                    getObjSettings(
+                                                        pixiApp.editorNode
+                                                            .objectPreview?.id
+                                                    ).solid)}
+                                            on:click={() => {
+                                                if (
+                                                    pixiApp.editorNode
+                                                        .objectPreview != null
+                                                ) {
+                                                    editButton.cb(
+                                                        pixiApp.editorNode
+                                                            .objectPreview
+                                                    )
 
-                                            pixiApp.editorNode.updateObjectPreview()
-                                        }
-                                    }}
-                                >
-                                    <img
-                                        draggable="false"
-                                        style="transform: scale({editButton.scale})"
-                                        class="button_icon"
-                                        alt=""
-                                        use:lazyLoad={`/gd/editor/edit/${editButton["image"]}.png`}
-                                    />
-                                </button>
-                            {/each}
-
-                            <!-- extra buttons -->
-                            {#if currentEditTab == 1 && pixiApp.editorNode.objectPreview != null}
-                                <t
-                                    class="edit_info_text"
-                                    style="grid-column-start: 1;grid-column-end: 3;"
-                                >
-                                    Z = {pixiApp.editorNode.objectPreview
-                                        ?.zOrder}
-                                </t>
-
-                                {#if pixiApp.editorNode.objectPreview?.mainColor.blending || pixiApp.editorNode.objectPreview?.detailColor.blending}
-                                    <t class="edit_info_text2">
-                                        (Since one of your colors has blending,
-                                        layering might not work as expected.
-                                        This is to replicate GD behavior)
-                                    </t>
-                                {/if}
+                                                    pixiApp.editorNode.updateObjectPreview()
+                                                }
+                                            }}
+                                        >
+                                            <img
+                                                draggable="false"
+                                                style="transform: scale({editButton.scale})"
+                                                class="button_icon"
+                                                alt=""
+                                                use:lazyLoad={`/gd/editor/edit/${editButton["image"]}.png`}
+                                            />
+                                        </button>
+                                    {/each}
+                                </div>
                             {/if}
 
-                            {#if currentEditTab == 2}
-                                <div class="colours_tab">sada</div>
+                            {#if currentEditTab === EditTab.Layers}
+                                <div class="zlayers_container">
+                                    <div
+                                        class="obj_buttons_container grid_padding"
+                                        style="grid-area: buttons"
+                                    >
+                                        {#each EDIT_BUTTONS[currentEditTab].buttons as editButton, i (currentEditTab * 100 + i)}
+                                            <button
+                                                class="edit_button invis_button wiggle_button"
+                                                disabled={pixiApp.editorNode
+                                                    .objectPreview == null}
+                                                on:click={() => {
+                                                    if (
+                                                        pixiApp.editorNode
+                                                            .objectPreview !=
+                                                        null
+                                                    ) {
+                                                        editButton.cb(
+                                                            pixiApp.editorNode
+                                                                .objectPreview
+                                                        )
+
+                                                        pixiApp.editorNode.updateObjectPreview()
+                                                    }
+                                                }}
+                                            >
+                                                <img
+                                                    draggable="false"
+                                                    style="transform: scale({editButton.scale})"
+                                                    class="button_icon"
+                                                    alt=""
+                                                    use:lazyLoad={`/gd/editor/edit/${editButton["image"]}.png`}
+                                                />
+                                            </button>
+                                        {/each}
+                                    </div>
+
+                                    {#if pixiApp.editorNode.objectPreview}
+                                        <t class="edit_info_text">
+                                            Z = {pixiApp.editorNode
+                                                .objectPreview?.zOrder}
+                                        </t>
+                                    {/if}
+
+                                    {#if pixiApp.editorNode.objectPreview?.mainColor.blending || pixiApp.editorNode.objectPreview?.detailColor.blending}
+                                        <t class="edit_info_text2">
+                                            (Since one of your colors has
+                                            blending, layering might not work as
+                                            expected. This is to replicate GD
+                                            behavior.)
+                                        </t>
+                                    {/if}
+                                </div>
+                            {/if}
+
+                            {#if currentEditTab === EditTab.Colors}
+                                <div class="colors_tab_container grid_padding">
+                                    <div class="colors_tab_channels_container">
+                                        {#each ["Main", "Detail"] as channel, i}
+                                            <button
+                                                class="invis_button wiggle_button colors_tab_labels"
+                                                id={currentChannel === i
+                                                    ? "selected_channel_button"
+                                                    : ""}
+                                                on:click={() => {
+                                                    currentChannel = i
+                                                }}
+                                            >
+                                                <!-- {#if pixiApp.editorNode.objectPreview}
+                                                <div
+                                                    class="channel_icons_container"
+                                                >
+                                                    <img
+                                                        class="channel_icon"
+                                                        alt="{channel} texture"
+                                                        src="/gd/objects/{channel.toLowerCase()}/{pixiApp
+                                                            .editorNode
+                                                            ?.objectPreview
+                                                            .id}.png"
+                                                    />
+                                                </div>
+                                            {/if} -->
+                                                {channel}
+                                            </button>
+                                        {/each}
+                                    </div>
+
+                                    <div class="colors_buttons_container">
+                                        <div class="colors_palette_container">
+                                            {#each PALETTE as color}
+                                                <button
+                                                    class="edit_button invis_button wiggle_button"
+                                                    disabled={!getObjSettings(
+                                                        pixiApp.editorNode
+                                                            .objectPreview?.id
+                                                    ).tintable ||
+                                                        pixiApp?.editorNode
+                                                            ?.objectPreview ==
+                                                            null ||
+                                                        (currentChannel ===
+                                                            ColorChannel.Main &&
+                                                            pixiApp?.editorNode
+                                                                ?.objectPreview
+                                                                ?.mainColor
+                                                                .blending &&
+                                                            color ==
+                                                                "000000") ||
+                                                        (currentChannel ===
+                                                            ColorChannel.Detail &&
+                                                            pixiApp?.editorNode
+                                                                ?.objectPreview
+                                                                ?.detailColor
+                                                                .blending &&
+                                                            color == "000000")}
+                                                    on:click={() => {
+                                                        if (
+                                                            pixiApp.editorNode
+                                                                .objectPreview !=
+                                                            null
+                                                        ) {
+                                                            if (
+                                                                currentChannel ===
+                                                                ColorChannel.Main
+                                                            )
+                                                                pixiApp.editorNode.objectPreview.mainColor.hex =
+                                                                    color
+                                                            else
+                                                                pixiApp.editorNode.objectPreview.detailColor.hex =
+                                                                    color
+
+                                                            pixiApp.editorNode.updateObjectPreview()
+                                                        }
+                                                    }}
+                                                >
+                                                    <div
+                                                        class="color_icon"
+                                                        style="background-color: {'#' +
+                                                            color};"
+                                                    />
+                                                </button>
+                                            {/each}
+                                        </div>
+
+                                        <div
+                                            class="colors_blending_opacity_container grid_padding"
+                                        >
+                                            <button
+                                                class="blending_toggle wiggle_button"
+                                                style={(currentChannel ==
+                                                    ColorChannel.Main &&
+                                                    pixiApp.editorNode
+                                                        .objectPreview
+                                                        ?.mainColor.blending) ||
+                                                (currentChannel ==
+                                                    ColorChannel.Detail &&
+                                                    pixiApp.editorNode
+                                                        .objectPreview
+                                                        ?.detailColor.blending)
+                                                    ? "border: 2px solid red"
+                                                    : ""}
+                                                disabled={!getObjSettings(
+                                                    pixiApp.editorNode
+                                                        .objectPreview?.id
+                                                ).tintable ||
+                                                    pixiApp.editorNode
+                                                        .objectPreview ==
+                                                        null ||
+                                                    (currentChannel ==
+                                                        ColorChannel.Main &&
+                                                        pixiApp.editorNode
+                                                            .objectPreview
+                                                            ?.mainColor.hex ==
+                                                            "000000") ||
+                                                    (currentChannel ==
+                                                        ColorChannel.Detail &&
+                                                        pixiApp.editorNode
+                                                            .objectPreview
+                                                            ?.detailColor.hex ==
+                                                            "000000")}
+                                                on:click={() => {
+                                                    if (
+                                                        pixiApp.editorNode
+                                                            .objectPreview !=
+                                                        null
+                                                    ) {
+                                                        if (
+                                                            currentChannel ==
+                                                            ColorChannel.Main
+                                                        )
+                                                            pixiApp.editorNode.objectPreview.mainColor.blending =
+                                                                !pixiApp
+                                                                    .editorNode
+                                                                    .objectPreview
+                                                                    .mainColor
+                                                                    .blending
+                                                        else if (
+                                                            currentChannel ==
+                                                            ColorChannel.Detail
+                                                        )
+                                                            pixiApp.editorNode.objectPreview.detailColor.blending =
+                                                                !pixiApp
+                                                                    .editorNode
+                                                                    .objectPreview
+                                                                    .detailColor
+                                                                    .blending
+                                                        pixiApp.editorNode.updateObjectPreview()
+                                                    }
+                                                }}
+                                            >
+                                                Blending
+                                            </button>
+                                            <!-- opacity slider -->
+                                            <div
+                                                class="opacity_slider_container"
+                                            >
+                                                <div class="edit_info_text">
+                                                    Opacity
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="0.2"
+                                                    max="1"
+                                                    step="0.2"
+                                                    value={currentChannel ==
+                                                    ColorChannel.Main
+                                                        ? pixiApp.editorNode
+                                                              .objectPreview
+                                                              ?.mainColor
+                                                              .opacity
+                                                        : pixiApp.editorNode
+                                                              .objectPreview
+                                                              ?.detailColor
+                                                              .opacity}
+                                                    class="opacity_slider"
+                                                    disabled={!getObjSettings(
+                                                        pixiApp.editorNode
+                                                            .objectPreview?.id
+                                                    ).tintable ||
+                                                        pixiApp?.editorNode
+                                                            ?.objectPreview ==
+                                                            null}
+                                                    on:input={(e) => {
+                                                        if (
+                                                            pixiApp.editorNode
+                                                                .objectPreview !=
+                                                            null
+                                                        ) {
+                                                            const val = e.target
+                                                            if (
+                                                                currentChannel ==
+                                                                ColorChannel.Main
+                                                            )
+                                                                pixiApp.editorNode.objectPreview.mainColor.opacity =
+                                                                    val.value
+                                                            else if (
+                                                                currentChannel ==
+                                                                ColorChannel.Detail
+                                                            )
+                                                                pixiApp.editorNode.objectPreview.detailColor.opacity =
+                                                                    val.value
+
+                                                            pixiApp.editorNode.updateObjectPreview()
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             {/if}
                         </div>
                     </div>
@@ -1013,10 +1284,37 @@
         }
     }
 
-    @media screen and (max-width: 500px) {
+    @media screen and (max-width: 600px) {
         :root {
             --grid-button-size: 30px;
             --font-medium: 18px;
+        }
+    }
+
+    @media screen and (max-width: 1000px), screen and (max-height: 600px) {
+        .colors_tab_container {
+            grid-template-areas:
+                "channels channels"
+                "buttons buttons" !important;
+
+            grid-template-columns: 1fr 1fr !important;
+            grid-template-rows: 25px auto !important;
+        }
+
+        .colors_buttons_container {
+            grid-template-columns: auto minmax(0, 35%) !important;
+        }
+
+        .colors_blending_opacity_container {
+            overflow-y: scroll;
+        }
+
+        .colors_tab_channels_container {
+            flex-direction: row !important;
+        }
+
+        .colors_palette_container {
+            padding: var(--grid-gap) !important;
         }
     }
 
@@ -1223,33 +1521,46 @@
         -webkit-text-stroke: 1.5px black;
         color: white;
         font-size: var(--font-medium);
-
         display: flex;
         justify-content: center;
+        grid-area: text;
         align-items: center;
     }
     .edit_info_text2 {
         font-size: var(--font-small);
         opacity: 0.5;
-        grid-column-start: 1;
-        grid-column-end: 6;
         color: white;
         font-family: Cabin, sans-serif;
+        grid-area: text2;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-style: italic;
+        padding: var(--grid-gap);
+        text-align: center;
     }
     .objects_grid_container {
-        overflow-y: scroll;
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
         position: relative;
+        grid-area: container;
+        height: 100%;
     }
     .objects_grid {
-        grid-area: container;
         width: 100%;
-        display: grid;
-        height: fit-content;
-        max-height: 100%;
-        grid-template-columns: repeat(auto-fill, var(--grid-button-size));
+        display: flex;
+        height: 100%;
+        flex-wrap: wrap;
         justify-content: center;
+    }
+    .obj_buttons_container {
+        display: flex;
+        position: relative;
+        height: fit-content;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .grid_padding {
         padding: var(--grid-gap);
         gap: 12px;
     }
@@ -1309,6 +1620,8 @@
     .obj_button {
         width: var(--grid-button-size);
         height: var(--grid-button-size);
+        min-width: var(--grid-button-size);
+        min-height: var(--grid-button-size);
         border-radius: 6px;
         background-image: linear-gradient(rgb(190, 190, 190), rgb(70, 70, 70));
         box-shadow: 0 4px 8px 0 #00000070;
@@ -1327,9 +1640,9 @@
         transform: scale(1.1);
     }
 
-    /* .debug_objectID {
+    .debug_objectID {
         display: none;
-    } */
+    }
 
     .obj_info {
         position: absolute;
@@ -1448,30 +1761,90 @@
         opacity: 0.3;
     }
 
-    .colours_tab {
+    .colors_tab_container {
+        display: grid;
+        gap: 10px;
+        grid-template-rows: minmax(auto, min-content) minmax(auto, min-content);
+
+        grid-template-areas:
+            "channels buttons"
+            "channels buttons";
         width: 100%;
         height: 100%;
+        overflow-y: hidden;
     }
 
-    /* .blending_opacity_container {
-        display: flex;
-        gap: 8px;
-        justify-content: center;
+    .colors_tab_channels_container {
+        grid-area: channels;
         width: 100%;
-        grid-column-end: 8;
-        grid-column-start: 1;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
     }
 
-    .color_header {
-        display: flex;
-        justify-content: center;
-        grid-column-end: 8;
-        grid-column-start: 2;
-
-        font-family: Pusab, Helvetica, sans-serif;
-        -webkit-text-stroke: 1.5px black;
+    .colors_tab_labels {
+        font-family: Pusab;
         color: white;
-        font-size: var(--font-large);
+        -webkit-text-stroke: 1.5px black;
+        font-size: var(--font-medium);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+        align-items: center;
+        border-radius: 6px;
+        padding: var(--grid-gap);
+        background-image: linear-gradient(rgb(183, 247, 130), rgb(64, 117, 48));
+        box-shadow: 0 4px 8px 0 #00000070;
+        opacity: 0.3;
+        width: 100%;
+    }
+
+    .colors_buttons_container {
+        height: 100%;
+        width: 100%;
+        grid-area: buttons;
+        display: grid;
+        grid-template-areas: "palette extras";
+        grid-template-columns: auto min-content;
+        overflow-y: hidden;
+    }
+
+    .colors_palette_container {
+        grid-area: palette;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        overflow-y: scroll;
+        justify-content: center;
+        padding-left: var(--grid-gap);
+    }
+
+    .zlayers_container {
+        display: grid;
+        gap: 0px 0px;
+        grid-template-areas:
+            "buttons"
+            "text"
+            "text2";
+        width: 100%;
+        height: 100%;
+        grid-template-rows: min-content min-content min-content;
+    }
+
+    #selected_channel_button {
+        opacity: 1;
+    }
+
+    .colors_blending_opacity_container {
+        grid-area: extras;
+        display: flex;
+        flex-direction: column;
     }
 
     .blending_toggle {
@@ -1486,7 +1859,7 @@
 
         font-family: Pusab, Helvetica, sans-serif;
         color: white;
-        font-size: var(--font-medium);
+        font-size: var(--font-small);
         -webkit-text-stroke: 1.5px black;
         justify-self: end;
     }
@@ -1513,6 +1886,7 @@
     .opacity_slider {
         background: none;
         appearance: none;
+        width: 100%;
     }
 
     input[type="range"]::-moz-range-track {
@@ -1530,7 +1904,7 @@
         background-color: none;
         border-radius: 6px;
         -webkit-appearance: none;
-    } */
+    }
 
     .playbutton {
         position: absolute;
