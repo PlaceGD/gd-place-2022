@@ -15,7 +15,7 @@ export function randomTexture() {
     return PIXI.Texture.from(`/gd/objects/main/${num}.png`)
 }
 
-export let eventStart = 0
+export let eventStart = null
 export let eventStartWritable = writable(null)
 onValue(ref(database, "editorState/eventStart"), (snapshot) => {
     eventStart = snapshot.val()
@@ -25,7 +25,7 @@ onValue(ref(database, "editorState/eventStart"), (snapshot) => {
 
 export let countingDown = writable(null)
 setInterval(() => {
-    if (eventStart > Date.now() / 1000) {
+    if (eventStart && eventStart > Date.now() / 1000) {
         countingDown.set(true)
     } else {
         countingDown.set(false)
@@ -198,12 +198,12 @@ const shuffle = (arr) => {
     return arr;
 }
 const offsets = [
-    vec(315, 915), 
-    vec(315 + DIGITS[0][0].length * 30 + 30, 915), 
-    vec(315 + DIGITS[0][0].length * 60 + 120, 915), 
-    vec(315 + DIGITS[0][0].length * 90 + 150, 915), 
-    vec(315 + DIGITS[0][0].length * 120 + 240, 915), 
-    vec(315 + DIGITS[0][0].length * 150 + 270, 915)
+    vec(195, 315), 
+    vec(195 + DIGITS[0][0].length * 30 + 30, 315), 
+    vec(195 + DIGITS[0][0].length * 60 + 120, 315), 
+    vec(195 + DIGITS[0][0].length * 90 + 150, 315), 
+    vec(195 + DIGITS[0][0].length * 120 + 240, 315), 
+    vec(195 + DIGITS[0][0].length * 150 + 270, 315)
 ]
 
 const PALLETES = shuffle([[0x01949A, 0x004369, 0xDB1F48], [0xD43790, 0xEC8FD0, 0x870A30], [0x3D550C, 0x81B622, 0xECF87F, 0x59981A], [0x21B6A8, 0xA3EBB1, 0x18A558]])

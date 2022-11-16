@@ -85,7 +85,7 @@
         )
 
         if (!editorPosition) {
-            editorPosition = { x: 0, y: 0, zoom: 0 }
+            editorPosition = { x: 27 * 30, y: 4, zoom: -3 }
         }
 
         if (data.get("x")) {
@@ -191,13 +191,6 @@
     mobileScreenQuery.addEventListener("change", () => {
         mobileScreen = mobileScreenQuery.matches
     })
-
-    let menuIndex = 0
-    function nextMenu(): EditorMenu {
-        return [EditorMenu.Build, EditorMenu.Edit, EditorMenu.Delete][
-            menuIndex++ % 3
-        ]
-    }
 </script>
 
 <svelte:window
@@ -489,7 +482,7 @@
         </div>
     {/if}
 
-    {#if $canEdit && $countingDown != null && !$countingDown && !settings.hideMenu.enabled}
+    {#if $canEdit && $eventStartWritable != null && $countingDown != null && !$countingDown && !settings.hideMenu.enabled}
         <div class="menu">
             <div
                 class="side_panel menu_panel"
@@ -942,7 +935,7 @@
                                                 type="range"
                                                 min="0.2"
                                                 max="1"
-                                                step="0.2"
+                                                step="0.1"
                                                 value={currentChannel ==
                                                 ColorChannel.Main
                                                     ? pixiApp.editorNode
@@ -986,7 +979,7 @@
                                         <div class="colors_palette_container">
                                             {#each PALETTE as color}
                                                 <button
-                                                    class="edit_button invis_button wiggle_button"
+                                                    class="edit_color_button invis_button wiggle_button"
                                                     style={(currentChannel ==
                                                         ColorChannel.Main &&
                                                         pixiApp.editorNode
@@ -1155,13 +1148,14 @@
                 </button>
             {/if}
         </div>
-    {:else if !settings.hideMenu.enabled && $countingDown != null}
+    {:else if !settings.hideMenu.enabled && $countingDown != null && $eventStartWritable != null}
         {#if $countingDown}
             {#if $streamLink != null}
                 <div class="livestream_link">
                     Join the <a href={$streamLink}> official livestream </a>
                 </div>
             {/if}
+
             <div class="count_down_message">
                 <div class="count_down_content">
                     <div class="loading">
@@ -1177,7 +1171,9 @@
                             <b style:font-size="calc(var(--font-large) * 2)">
                                 {$userCount}
                             </b>
-                            <div style="opacity:0.8">people have signed up</div>
+                            <div style="opacity:0.8">
+                                creators have signed up
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1417,6 +1413,20 @@
         padding: var(--grid-gap);
 
         position: fixed;
+        animation-name: menu_in;
+        animation-duration: 1s;
+        animation-timing-function: cubic-bezier(0, 0.4, 0, 1.01);
+    }
+
+    @keyframes menu_in {
+        0% {
+            opacity: 0;
+            transform: translateY(100%);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0%);
+        }
     }
 
     .login_requirement_message {
@@ -1458,6 +1468,17 @@
         backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
         margin-top: 5px;
+        overflow: hidden;
+    }
+
+    @keyframes slide {
+        0% {
+            transform: translateX(-100%);
+        }
+
+        100% {
+            transform: translateX(0%);
+        }
     }
 
     .count_down_content {
@@ -1466,6 +1487,10 @@
         grid-template-columns: 30% 70%;
         margin: 20px;
         flex-direction: row;
+        animation-name: slide;
+
+        animation-duration: 5s;
+        animation-timing-function: cubic-bezier(0, 0.3, 0.3, 1);
     }
 
     .count_down_text {
@@ -1916,6 +1941,21 @@
         opacity: 0.3;
     }
 
+    .edit_color_button {
+        width: calc(var(--grid-button-size) * 0.9);
+        height: calc(var(--grid-button-size) * 0.9);
+        border-radius: 6px;
+        background-image: linear-gradient(rgb(183, 247, 130), rgb(64, 117, 48));
+        box-shadow: 0 4px 8px 0 #00000070;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .edit_color_button:disabled {
+        opacity: 0.3;
+    }
+
     .colors_tab_container {
         display: grid;
         gap: 10px;
@@ -1998,7 +2038,7 @@
         height: 100%;
         display: flex;
         flex-wrap: wrap;
-        gap: 12px;
+        gap: 10px;
         justify-content: center;
     }
 
@@ -2098,9 +2138,9 @@
     }
 
     .color_icon {
-        width: 70%;
-        height: 70%;
-        border-radius: 50%;
+        width: 85%;
+        height: 85%;
+        border-radius: 10%;
         border: 2px solid white;
     }
 </style>

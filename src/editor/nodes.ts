@@ -131,8 +131,15 @@ export class EditorNode extends PIXI.Container {
                         const o = object as ObjectNode
                         resetObjectColors(o)
 
-                        selectablechunk.getChildByName(object.name).visible =
-                            object.visible
+                        const obj = getObjSettings(o.obj.id)
+                        if (settings.showDanger.enabled)
+                            selectablechunk.getChildByName(
+                                object.name
+                            ).visible = obj.danger || obj.solid
+                        else
+                            selectablechunk.getChildByName(
+                                object.name
+                            ).visible = true
                     }
                 }
             }
@@ -373,7 +380,12 @@ export class EditorNode extends PIXI.Container {
 
         // invisible mask before level bounds
         const mask = new PIXI.Graphics()
+        mask.beginFill(0xff0000)
         mask.drawRect(
+            // -100,
+            // -100,
+            // 200,
+            // 200
             LEVEL_BOUNDS.start.x,
             LEVEL_BOUNDS.end.y - 10,
             LEVEL_BOUNDS.end.x - LEVEL_BOUNDS.start.x,

@@ -19,46 +19,6 @@
     <div class="blob">
         <div class="tk-blob" style="--fill: #030303; --speed: 50s">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 341.4 374.7">
-                <defs>
-                    <filter
-                        id="sofGlow"
-                        height="200%"
-                        width="200%"
-                        x="-75%"
-                        y="-75%"
-                    >
-                        <feMorphology
-                            operator="dilate"
-                            radius="4"
-                            in="SourceAlpha"
-                            result="thicken"
-                        />
-
-                        <feGaussianBlur
-                            in="thicken"
-                            stdDeviation="10"
-                            result="blurred"
-                        />
-
-                        <feFlood
-                            flood-color="rgb(0,186,255)"
-                            result="glowColor"
-                        />
-
-                        <feComposite
-                            in="glowColor"
-                            in2="blurred"
-                            operator="in"
-                            result="softGlow_colored"
-                        />
-
-                        <feMerge>
-                            <feMergeNode in="softGlow_colored" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
-                </defs>
-
                 <path
                     filter="url(#sofGlow)"
                     d="M309.9 70.6c37.8 52.7 39.8 128.7 15.4 184.1-24.3 55.4-75 90.1-125.4 107.4-50.4 17.4-100.4 17.4-136.2-3.3-35.7-20.7-57.2-62-62.4-102.1-5.2-40.2 5.8-79 29.1-128.3C53.6 79.1 89.1 19.3 143.7 4.1 198.3-11.2 272 18 309.9 70.6z"

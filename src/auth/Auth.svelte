@@ -192,7 +192,7 @@
     {#if loadedUserData == null && !loginPopupVisible}
         <button
             class="log_in_out_button wiggle_button invis_button pos_move"
-            style:margin-right={$countingDown ? "12px" : "100px"}
+            style:margin-right={$countingDown ? "16px" : "100px"}
             on:click={() => {
                 loginPopupVisible = true
             }}
@@ -207,7 +207,7 @@
     {:else if !loginPopupVisible}
         <button
             class="log_in_out_button invis_button wiggle_button pos_move"
-            style:margin-right={$countingDown ? "12px" : "100px"}
+            style:margin-right={$countingDown ? "16px" : "100px"}
             on:click={() => {
                 if (confirm("Are you sure you want to sign out?")) {
                     signOut()
@@ -565,7 +565,7 @@
     }
 
     .log_in_out_button {
-        padding-top: 12px;
+        padding-top: 15px;
     }
 
     .log_in_out_button > img {
@@ -746,7 +746,7 @@
 
     .username_display {
         position: absolute;
-        margin-top: 32px;
+        margin-top: 26px;
         font-family: Pusab;
         font-size: var(--font-medium);
 

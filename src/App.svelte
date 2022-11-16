@@ -28,9 +28,9 @@
 
 <SvelteToast options={{ reversed: true, intro: { y: 192 } }} />
 
-<!-- <Page /> -->
+<Page />
 
-{#if isEmailVerification}
+<!-- {#if isEmailVerification}
     <div class="email">
         {emailSuccess}
     </div>
@@ -52,8 +52,7 @@
             />
         </div>
     </div>
-{/if}
-
+{/if} -->
 <style>
     .email {
         display: flex;

@@ -117,8 +117,8 @@
 
     .settings_button {
         position: absolute;
-        margin-top: 10px;
-        margin-right: 14px;
+        margin-top: 15px;
+        margin-right: 15px;
     }
 
     .settings_button > img {
