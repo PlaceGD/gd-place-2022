@@ -31,21 +31,34 @@ canEdit.subscribe((value) => {
 
 export let placeTimerMax = writable(0)
 
-onValue(ref(database, "placeTimer"), (snapshot) => {
+onValue(ref(database, "editorState/placeTimer"), (snapshot) => {
     placeTimerMax.set(snapshot.val())
-    console.log("placeTimer", snapshot.val())
+    console.log("editorState/placeTimer", snapshot.val())
 })
 
 export let deleteTimerMax = writable(0)
 
-onValue(ref(database, "deleteTimer"), (snapshot) => {
+onValue(ref(database, "editorState/deleteTimer"), (snapshot) => {
     deleteTimerMax.set(snapshot.val())
-    console.log("deleteTimer", snapshot.val())
+    console.log("editorState/deleteTimer", snapshot.val())
 })
 
 export async function getHistory() {
     return (await get(ref(database, "history"))).val()
 }
+
+export let streamLink = writable(null)
+export let streamLinkValue = null
+onValue(ref(database, "officialStreamLink"), (snapshot) => {
+    streamLinkValue = snapshot.val()
+    streamLink.set(streamLinkValue)
+})
+
+export let userCount = writable(null)
+
+onValue(ref(database, "userCount"), (snapshot) => {
+    userCount.set(snapshot.val())
+})
 
 let userColorCache = {}
 export async function getUsernameColors(username: string): Promise<number[]> {

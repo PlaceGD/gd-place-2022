@@ -25,10 +25,11 @@
     } from "../firebase/auth"
     import { auth, database } from "../firebase/init"
     import { getUsernameColors } from "../firebase/database"
+    import { toGradient } from "../editor/app"
+    import { countingDown, eventStart } from "../countdown/countdown"
 
     import "swiper/css"
     import "./auth.css"
-    import { toGradient } from "../editor/app"
 
     export let loadedUserData: UserData | null
     let userProperties: UserProperties | null = null
@@ -184,23 +185,29 @@
     }
 </script>
 
-<div class="all">
-    {#if loadedUserData == null}
+<div
+    class="all"
+    style={loginPopupVisible ? "position: absolute; width: 100vw;" : ""}
+>
+    {#if loadedUserData == null && !loginPopupVisible}
         <button
-            class="log_in_out_button invis_button wiggle_button"
+            class="log_in_out_button wiggle_button invis_button pos_move"
+            style:margin-right={$countingDown ? "12px" : "100px"}
             on:click={() => {
                 loginPopupVisible = true
             }}
         >
             <img
+                class={eventStart < Date.now() / 1000 ? "alert_glow" : ""}
                 draggable="false"
                 src="/login/profile_in.png"
                 alt="sign in button"
             />
         </button>
-    {:else}
+    {:else if !loginPopupVisible}
         <button
-            class="log_in_out_button invis_button wiggle_button"
+            class="log_in_out_button invis_button wiggle_button pos_move"
+            style:margin-right={$countingDown ? "12px" : "100px"}
             on:click={() => {
                 if (confirm("Are you sure you want to sign out?")) {
                     signOut()
@@ -225,7 +232,7 @@
         </button>
         {#await getUsernameColors($currentUserData?.data?.username) then colors}
             <div
-                class="username_display {colors.length > 1
+                class="username_display pos_move {colors.length > 1
                     ? 'username_gradient'
                     : ''}"
                 style="{colors.length == 1
@@ -233,6 +240,9 @@
                     : `background-image: ${toGradient(
                           colors
                       )}`};-webkit-text-stroke: {complement(colors)};"
+                style:margin-right={$countingDown
+                    ? "calc(100px + 5px)"
+                    : "calc(100px + 80px + 5px)"}
             >
                 {loadedUserData.data.username}
             </div>
@@ -498,8 +508,6 @@
 
 <style>
     .all {
-        position: absolute;
-        width: 100vw;
         height: 100vh;
         display: flex;
         justify-content: flex-end;
@@ -557,9 +565,7 @@
     }
 
     .log_in_out_button {
-        position: absolute;
-        margin-top: 16px;
-        margin-right: calc(14px + 75px + 5px);
+        padding-top: 12px;
     }
 
     .log_in_out_button > img {
@@ -734,10 +740,13 @@
         text-align: center;
     }
 
+    .pos_move {
+        transition: padding-righ margin-right ease-in-out 0.3s;
+    }
+
     .username_display {
         position: absolute;
         margin-top: 32px;
-        margin-right: calc(100px + 75px + 5px);
         font-family: Pusab;
         font-size: var(--font-medium);
 
@@ -791,5 +800,21 @@
         background-color: #01010199;
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
+    }
+
+    .alert_glow {
+        animation: scale 4s ease-in-out forwards infinite;
+    }
+
+    @keyframes scale {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.2);
+        }
+        100% {
+            transform: scale(1);
+        }
     }
 </style>

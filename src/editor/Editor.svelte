@@ -29,16 +29,23 @@
         deleteTimerMax,
         getUsernameColors,
         placeTimerMax,
+        streamLink,
         updateObjectCategory,
+        userCount,
     } from "../firebase/database"
     import { canEdit, currentUserData } from "../firebase/auth"
     import { MAX_ZOOM, MIN_ZOOM, toastErrorTheme } from "../const"
     import { onMount } from "svelte"
     import { settings, settings_writable } from "../settings/settings"
-    import { object_without_properties } from "svelte/internal"
+    import { now, object_without_properties } from "svelte/internal"
     import { getPlacedUsername } from "./nodes"
     import { get, onValue, ref } from "firebase/database"
     import { database } from "../firebase/init"
+    import {
+        countingDown,
+        eventStart,
+        eventStartWritable,
+    } from "../countdown/countdown"
 
     $: Object.keys(settings).forEach((key) => {
         settings[key] = $settings_writable[key]
@@ -482,7 +489,7 @@
         </div>
     {/if}
 
-    {#if $canEdit && !settings.hideMenu.enabled}
+    {#if $canEdit && $countingDown != null && !$countingDown && !settings.hideMenu.enabled}
         <div class="menu">
             <div
                 class="side_panel menu_panel"
@@ -837,42 +844,163 @@
                             {/if}
 
                             {#if currentEditTab === EditTab.Colors}
-                                <div class="colors_tab_container grid_padding">
+                                <div class="colors_tab_container">
                                     <div class="colors_tab_channels_container">
                                         {#each ["Main", "Detail"] as channel, i}
-                                            <button
-                                                class="invis_button wiggle_button colors_tab_labels"
+                                            <div
+                                                class="colors_tab_labels_container"
                                                 id={currentChannel === i
                                                     ? "selected_channel_button"
                                                     : ""}
-                                                on:click={() => {
-                                                    currentChannel = i
-                                                }}
                                             >
-                                                <!-- {#if pixiApp.editorNode.objectPreview}
-                                                <div
-                                                    class="channel_icons_container"
+                                                <button
+                                                    class="invis_button wiggle_button colors_tab_labels"
+                                                    on:click={() => {
+                                                        currentChannel = i
+                                                    }}
                                                 >
-                                                    <img
-                                                        class="channel_icon"
-                                                        alt="{channel} texture"
-                                                        src="/gd/objects/{channel.toLowerCase()}/{pixiApp
-                                                            .editorNode
-                                                            ?.objectPreview
-                                                            .id}.png"
-                                                    />
-                                                </div>
-                                            {/if} -->
-                                                {channel}
-                                            </button>
+                                                    {channel}
+                                                </button>
+
+                                                <button
+                                                    class="blending_toggle wiggle_button"
+                                                    style={(channel == "Main" &&
+                                                        pixiApp.editorNode
+                                                            .objectPreview
+                                                            ?.mainColor
+                                                            .blending) ||
+                                                    (channel == "Detail" &&
+                                                        pixiApp.editorNode
+                                                            .objectPreview
+                                                            ?.detailColor
+                                                            .blending)
+                                                        ? "outline: 2px solid #09d6e5;background-image:var(--color-button-enable);"
+                                                        : ""}
+                                                    disabled={!getObjSettings(
+                                                        pixiApp.editorNode
+                                                            .objectPreview?.id
+                                                    ).tintable ||
+                                                        pixiApp.editorNode
+                                                            .objectPreview ==
+                                                            null ||
+                                                        (channel == "Main" &&
+                                                            pixiApp.editorNode
+                                                                .objectPreview
+                                                                ?.mainColor
+                                                                .hex ==
+                                                                "000000") ||
+                                                        (channel == "Detail" &&
+                                                            pixiApp.editorNode
+                                                                .objectPreview
+                                                                ?.detailColor
+                                                                .hex ==
+                                                                "000000")}
+                                                    on:click={() => {
+                                                        if (
+                                                            pixiApp.editorNode
+                                                                .objectPreview !=
+                                                            null
+                                                        ) {
+                                                            if (
+                                                                channel ==
+                                                                "Main"
+                                                            )
+                                                                pixiApp.editorNode.objectPreview.mainColor.blending =
+                                                                    !pixiApp
+                                                                        .editorNode
+                                                                        .objectPreview
+                                                                        .mainColor
+                                                                        .blending
+                                                            else if (
+                                                                channel ==
+                                                                "Detail"
+                                                            )
+                                                                pixiApp.editorNode.objectPreview.detailColor.blending =
+                                                                    !pixiApp
+                                                                        .editorNode
+                                                                        .objectPreview
+                                                                        .detailColor
+                                                                        .blending
+                                                            pixiApp.editorNode.updateObjectPreview()
+                                                        }
+                                                    }}
+                                                >
+                                                    {#if mobileScreen}
+                                                        B
+                                                    {:else}
+                                                        Blending
+                                                    {/if}
+                                                </button>
+                                            </div>
                                         {/each}
                                     </div>
 
                                     <div class="colors_buttons_container">
+                                        <!-- opacity slider -->
+                                        <div class="opacity_slider_container">
+                                            <input
+                                                type="range"
+                                                min="0.2"
+                                                max="1"
+                                                step="0.2"
+                                                value={currentChannel ==
+                                                ColorChannel.Main
+                                                    ? pixiApp.editorNode
+                                                          .objectPreview
+                                                          ?.mainColor.opacity
+                                                    : pixiApp.editorNode
+                                                          .objectPreview
+                                                          ?.detailColor.opacity}
+                                                class="opacity_slider"
+                                                disabled={!getObjSettings(
+                                                    pixiApp.editorNode
+                                                        .objectPreview?.id
+                                                ).tintable ||
+                                                    pixiApp?.editorNode
+                                                        ?.objectPreview == null}
+                                                on:input={(e) => {
+                                                    if (
+                                                        pixiApp.editorNode
+                                                            .objectPreview !=
+                                                        null
+                                                    ) {
+                                                        const val = e.target
+                                                        if (
+                                                            currentChannel ==
+                                                            ColorChannel.Main
+                                                        )
+                                                            pixiApp.editorNode.objectPreview.mainColor.opacity =
+                                                                val.value
+                                                        else if (
+                                                            currentChannel ==
+                                                            ColorChannel.Detail
+                                                        )
+                                                            pixiApp.editorNode.objectPreview.detailColor.opacity =
+                                                                val.value
+
+                                                        pixiApp.editorNode.updateObjectPreview()
+                                                    }
+                                                }}
+                                            />
+                                        </div>
                                         <div class="colors_palette_container">
                                             {#each PALETTE as color}
                                                 <button
                                                     class="edit_button invis_button wiggle_button"
+                                                    style={(currentChannel ==
+                                                        ColorChannel.Main &&
+                                                        pixiApp.editorNode
+                                                            .objectPreview
+                                                            ?.mainColor.hex ==
+                                                            color) ||
+                                                    (currentChannel ==
+                                                        ColorChannel.Detail &&
+                                                        pixiApp.editorNode
+                                                            .objectPreview
+                                                            ?.detailColor.hex ==
+                                                            color)
+                                                        ? "outline: 2px solid #09d6e5;background-image:var(--color-button-enable);"
+                                                        : ""}
                                                     disabled={!getObjSettings(
                                                         pixiApp.editorNode
                                                             .objectPreview?.id
@@ -922,131 +1050,6 @@
                                                     />
                                                 </button>
                                             {/each}
-                                        </div>
-
-                                        <div
-                                            class="colors_blending_opacity_container grid_padding"
-                                        >
-                                            <button
-                                                class="blending_toggle wiggle_button"
-                                                style={(currentChannel ==
-                                                    ColorChannel.Main &&
-                                                    pixiApp.editorNode
-                                                        .objectPreview
-                                                        ?.mainColor.blending) ||
-                                                (currentChannel ==
-                                                    ColorChannel.Detail &&
-                                                    pixiApp.editorNode
-                                                        .objectPreview
-                                                        ?.detailColor.blending)
-                                                    ? "border: 2px solid red"
-                                                    : ""}
-                                                disabled={!getObjSettings(
-                                                    pixiApp.editorNode
-                                                        .objectPreview?.id
-                                                ).tintable ||
-                                                    pixiApp.editorNode
-                                                        .objectPreview ==
-                                                        null ||
-                                                    (currentChannel ==
-                                                        ColorChannel.Main &&
-                                                        pixiApp.editorNode
-                                                            .objectPreview
-                                                            ?.mainColor.hex ==
-                                                            "000000") ||
-                                                    (currentChannel ==
-                                                        ColorChannel.Detail &&
-                                                        pixiApp.editorNode
-                                                            .objectPreview
-                                                            ?.detailColor.hex ==
-                                                            "000000")}
-                                                on:click={() => {
-                                                    if (
-                                                        pixiApp.editorNode
-                                                            .objectPreview !=
-                                                        null
-                                                    ) {
-                                                        if (
-                                                            currentChannel ==
-                                                            ColorChannel.Main
-                                                        )
-                                                            pixiApp.editorNode.objectPreview.mainColor.blending =
-                                                                !pixiApp
-                                                                    .editorNode
-                                                                    .objectPreview
-                                                                    .mainColor
-                                                                    .blending
-                                                        else if (
-                                                            currentChannel ==
-                                                            ColorChannel.Detail
-                                                        )
-                                                            pixiApp.editorNode.objectPreview.detailColor.blending =
-                                                                !pixiApp
-                                                                    .editorNode
-                                                                    .objectPreview
-                                                                    .detailColor
-                                                                    .blending
-                                                        pixiApp.editorNode.updateObjectPreview()
-                                                    }
-                                                }}
-                                            >
-                                                Blending
-                                            </button>
-                                            <!-- opacity slider -->
-                                            <div
-                                                class="opacity_slider_container"
-                                            >
-                                                <div class="edit_info_text">
-                                                    Opacity
-                                                </div>
-                                                <input
-                                                    type="range"
-                                                    min="0.2"
-                                                    max="1"
-                                                    step="0.2"
-                                                    value={currentChannel ==
-                                                    ColorChannel.Main
-                                                        ? pixiApp.editorNode
-                                                              .objectPreview
-                                                              ?.mainColor
-                                                              .opacity
-                                                        : pixiApp.editorNode
-                                                              .objectPreview
-                                                              ?.detailColor
-                                                              .opacity}
-                                                    class="opacity_slider"
-                                                    disabled={!getObjSettings(
-                                                        pixiApp.editorNode
-                                                            .objectPreview?.id
-                                                    ).tintable ||
-                                                        pixiApp?.editorNode
-                                                            ?.objectPreview ==
-                                                            null}
-                                                    on:input={(e) => {
-                                                        if (
-                                                            pixiApp.editorNode
-                                                                .objectPreview !=
-                                                            null
-                                                        ) {
-                                                            const val = e.target
-                                                            if (
-                                                                currentChannel ==
-                                                                ColorChannel.Main
-                                                            )
-                                                                pixiApp.editorNode.objectPreview.mainColor.opacity =
-                                                                    val.value
-                                                            else if (
-                                                                currentChannel ==
-                                                                ColorChannel.Detail
-                                                            )
-                                                                pixiApp.editorNode.objectPreview.detailColor.opacity =
-                                                                    val.value
-
-                                                            pixiApp.editorNode.updateObjectPreview()
-                                                        }
-                                                    }}
-                                                />
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1152,13 +1155,41 @@
                 </button>
             {/if}
         </div>
-    {:else if !settings.hideMenu.enabled}
-        <div class="login_requirement_message">
-            You must be signed in to help build the level!
-            <div style="transform:scale(0.8);opacity:0.5;margin-top:10px;">
-                (click the icon in the top right corner)
+    {:else if !settings.hideMenu.enabled && $countingDown != null}
+        {#if $countingDown}
+            {#if $streamLink != null}
+                <div class="livestream_link">
+                    Join the <a href={$streamLink}> official livestream </a>
+                </div>
+            {/if}
+            <div class="count_down_message">
+                <div class="count_down_content">
+                    <div class="loading">
+                        <img
+                            src="/loadinganimcss.svg"
+                            alt="Loading icon"
+                            class="loading_icon"
+                        />
+                    </div>
+
+                    <div style:margin="0" class="count_down_text">
+                        <div class="user_counter">
+                            <b style:font-size="calc(var(--font-large) * 2)">
+                                {$userCount}
+                            </b>
+                            <div style="opacity:0.8">people have signed up</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+        {:else}
+            <div class="login_requirement_message">
+                You must be signed in to help build the level!
+                <div style="transform:scale(0.8);opacity:0.5;margin-top:10px;">
+                    (click the icon in the top right corner)
+                </div>
+            </div>
+        {/if}
     {/if}
 </div>
 
@@ -1178,6 +1209,11 @@
         --timer-scale: 1;
 
         --timer-font: 70px;
+
+        --color-button-enable: linear-gradient(
+            rgb(183, 247, 130),
+            rgb(64, 117, 48)
+        );
     }
 
     @media screen and (max-height: 800px) {
@@ -1231,6 +1267,13 @@
         .login_requirement_message {
             max-height: 25vh;
             font-size: calc(var(--font-medium) - 6px) !important;
+        }
+
+        .loading {
+            width: 100%;
+            height: 100px !important;
+            margin: 10px;
+            overflow-x: hidden;
         }
     }
 
@@ -1298,23 +1341,28 @@
                 "buttons buttons" !important;
 
             grid-template-columns: 1fr 1fr !important;
-            grid-template-rows: 25px auto !important;
-        }
-
-        .colors_buttons_container {
-            grid-template-columns: auto minmax(0, 35%) !important;
-        }
-
-        .colors_blending_opacity_container {
-            overflow-y: scroll;
+            grid-template-rows: 30px auto !important;
+            overflow: hidden !important;
+            gap: 2px !important;
         }
 
         .colors_tab_channels_container {
             flex-direction: row !important;
         }
 
-        .colors_palette_container {
-            padding: var(--grid-gap) !important;
+        .colors_tab_labels_container {
+            grid-template-columns: 70% 30% !important;
+            grid-template-rows: 100% 0px !important;
+            flex-direction: row !important;
+            height: 100% !important;
+        }
+
+        .colors_tab_labels {
+            border-radius: 6px 0px 0px 6px !important;
+        }
+        .blending_toggle {
+            border-radius: 0px 6px 6px 0px !important;
+            font-size: var(--font-small);
         }
     }
 
@@ -1379,9 +1427,10 @@
         margin: 16px;
         background-color: #000c;
         border-radius: 16px;
-        padding: var(--font-large);
+        padding: var(--font-large); /* ?? */
         justify-content: center;
         flex-direction: column;
+        gap: 10px;
         align-items: center;
         font-family: Pusab, Helvetica, sans-serif;
         color: white;
@@ -1389,6 +1438,113 @@
         backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
         text-align: center;
+    }
+
+    .count_down_message {
+        width: calc(100% - 32px);
+        height: fit-content;
+        max-height: 25vh;
+        z-index: 10;
+        display: flex;
+        margin: 20px;
+
+        background-color: #000c;
+        border-radius: 16px;
+
+        justify-content: center;
+
+        align-items: center;
+
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        margin-top: 5px;
+    }
+
+    .count_down_content {
+        width: fit-content;
+        display: grid;
+        grid-template-columns: 30% 70%;
+        margin: 20px;
+        flex-direction: row;
+    }
+
+    .count_down_text {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 15px;
+        align-items: center;
+        max-height: inherit;
+    }
+
+    .loading {
+        width: 100%;
+        height: 90%;
+        margin: 10px;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .loading_icon {
+        height: 100%;
+        width: auto;
+        object-fit: contain;
+        -webkit-mask-image: linear-gradient(
+            90deg,
+            #00000000 15%,
+            #fff 50%,
+            #00000000 80%
+        );
+        mask-image: linear-gradient(
+            90deg,
+            #00000000 15%,
+            #fff 50%,
+            #00000000 80%
+        );
+    }
+
+    .user_counter {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+
+        margin: 10px;
+        font-family: Cabin, sans-serif;
+        color: white;
+        font-size: calc(var(--font-large) - 10px);
+        text-align: center;
+    }
+
+    .livestream_link {
+        width: fit-content;
+        height: fit-content;
+        max-height: 5vh;
+        z-index: 12;
+        padding: 5px;
+        padding-left: 20px;
+        padding-right: 20px;
+
+        background-color: #000c;
+        border-radius: 16px;
+
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+
+        font-family: Cabin, sans-serif;
+        font-size: var(--font-medium);
+        color: white;
+        margin: 0;
+        text-align: center;
+
+        bottom: 0;
+    }
+
+    .livestream_link > a {
+        color: rgb(98, 192, 255);
+        text-decoration: none;
     }
 
     .menu_panel {
@@ -1770,7 +1926,6 @@
             "channels buttons";
         width: 100%;
         height: 100%;
-        overflow-y: hidden;
     }
 
     .colors_tab_channels_container {
@@ -1781,7 +1936,8 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 12px;
+        gap: 5px;
+        padding: 5px;
     }
 
     .colors_tab_labels {
@@ -1789,27 +1945,51 @@
         color: white;
         -webkit-text-stroke: 1.5px black;
         font-size: var(--font-medium);
-        height: 100%;
+
         display: flex;
         flex-direction: column;
         justify-content: space-evenly;
         align-items: center;
-        border-radius: 6px;
-        padding: var(--grid-gap);
+        border-radius: 6px 6px 0px 0px;
         background-image: linear-gradient(rgb(183, 247, 130), rgb(64, 117, 48));
-        box-shadow: 0 4px 8px 0 #00000070;
-        opacity: 0.3;
+    }
+
+    .colors_tab_labels_container {
+        display: grid;
+        grid-template-rows: 60% 40%;
+        flex-direction: column;
+        height: 100%;
         width: 100%;
+        opacity: 0.3;
+        padding: 0;
+        gap: 2px;
+    }
+
+    .blending_toggle {
+        border-radius: 0px 0px 6px 6px;
+        background-image: linear-gradient(rgb(183, 247, 130), rgb(64, 117, 48));
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        font-family: Pusab, Helvetica, sans-serif;
+        color: white;
+        font-size: calc(var(--font-small) * 0.7);
+        -webkit-text-stroke: 1.5px black;
+
+        border: none;
+        width: 100%;
+        text-overflow: clip;
+        overflow: hidden;
     }
 
     .colors_buttons_container {
         height: 100%;
         width: 100%;
         grid-area: buttons;
-        display: grid;
-        grid-template-areas: "palette extras";
-        grid-template-columns: auto min-content;
-        overflow-y: hidden;
+        display: flex;
+        flex-direction: column;
+        overflow-y: scroll;
     }
 
     .colors_palette_container {
@@ -1819,9 +1999,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
-        overflow-y: scroll;
         justify-content: center;
-        padding-left: var(--grid-gap);
     }
 
     .zlayers_container {
@@ -1840,29 +2018,6 @@
         opacity: 1;
     }
 
-    .colors_blending_opacity_container {
-        grid-area: extras;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .blending_toggle {
-        height: var(--grid-button-size);
-        width: 100%;
-        border-radius: 6px;
-        background-image: linear-gradient(rgb(183, 247, 130), rgb(64, 117, 48));
-        box-shadow: 0 4px 8px 0 #00000070;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-
-        font-family: Pusab, Helvetica, sans-serif;
-        color: white;
-        font-size: var(--font-small);
-        -webkit-text-stroke: 1.5px black;
-        justify-self: end;
-    }
-
     .blending_toggle:disabled {
         opacity: 0.3;
     }
@@ -1870,6 +2025,8 @@
     .opacity_slider_container {
         width: 100%;
         height: 100%;
+
+        padding: 10px 20px 10px 20px;
 
         display: flex;
         justify-content: center;

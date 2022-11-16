@@ -6,8 +6,8 @@
     import Editor from "./editor/Editor.svelte"
     import { currentUserData } from "./firebase/auth"
     import { isEmailVerification } from "./firebase/auth"
-    import Countdown from "./countdown/Countdown.svelte"
     import Page from "./eventdone/Page.svelte"
+    import { countingDown, eventStart } from "./countdown/countdown"
 
     let emailSuccess = "loading"
 
@@ -28,7 +28,6 @@
 
 <SvelteToast options={{ reversed: true, intro: { y: 192 } }} />
 
-<!-- <Countdown /> -->
 <!-- <Page /> -->
 
 {#if isEmailVerification}
@@ -37,8 +36,12 @@
     </div>
 {:else if typeof $currentUserData != "string"}
     <Editor />
-    <Auth loadedUserData={$currentUserData} />
-    <Settings />
+    <div class="auth_settings">
+        {#if !$countingDown}
+            <Settings />
+        {/if}
+        <Auth loadedUserData={$currentUserData} />
+    </div>
 {:else}
     <div class="loading_container">
         <div class="loading">
@@ -93,5 +96,19 @@
             #fff 50%,
             #00000000 80%
         );
+    }
+
+    .auth_settings {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: flex-end;
+        position: absolute;
+        top: 0;
+        right: 0;
+        /* gap: 10px;
+        padding-top: 12px;
+        padding-right: 12px; */
+        pointer-events: none;
     }
 </style>

@@ -6,6 +6,7 @@ import type { EditorNode } from "../editor/nodes"
 import { onValue, ref } from "firebase/database"
 import { database } from "../firebase/init"
 import { getObjSettings } from "../editor/object"
+import { writable } from "svelte/store"
 
 export const OBJECTS = [1, 2, 3, 4, 5, 6, 7]
 
@@ -15,9 +16,21 @@ export function randomTexture() {
 }
 
 export let eventStart = 0
-onValue(ref(database, "eventStart"), (snapshot) => {
+export let eventStartWritable = writable(null)
+onValue(ref(database, "editorState/eventStart"), (snapshot) => {
     eventStart = snapshot.val()
+    eventStartWritable.set(eventStart)
+    console.log(eventStart)
 })
+
+export let countingDown = writable(null)
+setInterval(() => {
+    if (eventStart > Date.now() / 1000) {
+        countingDown.set(true)
+    } else {
+        countingDown.set(false)
+    }
+}, 1000)
 
 const DIGITS = [
     [
@@ -198,7 +211,7 @@ const PALLETES = shuffle([[0x01949A, 0x004369, 0xDB1F48], [0xD43790, 0xEC8FD0, 0
 export class CountDownNode extends PIXI.Container {
     public digits = [null, null, null, null, null, null]
 
-    public state = [0, 0, 0, 0, 0, 0]
+    public state = [null, null, null, null, null, null]
 
     public textures
 
@@ -208,7 +221,9 @@ export class CountDownNode extends PIXI.Container {
 
     public palleteState = [2,2,3,3,1,1]
 
-    constructor(app: PIXI.Application, editorNode: EditorNode) {
+    public colons = []
+
+    constructor(app: PIXI.Application, public editorNode: EditorNode) {
         super()
         
         this.textures = objects.map(o => PIXI.Texture.from(`/gd/objects/main/${o}.png`))
@@ -221,28 +236,40 @@ export class CountDownNode extends PIXI.Container {
             this.digits[i] = this.makeDigit(editorNode, i)
         }
 
-        this.addBlock(editorNode, choose(this.textures), offsets[2].plus(vec(-60, -90)), choose(PALLETES[0]), 0.5)
-        this.addBlock(editorNode, choose(this.textures), offsets[2].plus(vec(-60, -180)), choose(PALLETES[0]), 0.5)
-        this.addBlock(editorNode, choose(this.textures), offsets[4].plus(vec(-60, -90)), choose(PALLETES[0]), 0.5)
-        this.addBlock(editorNode, choose(this.textures), offsets[4].plus(vec(-60, -180)), choose(PALLETES[0]), 0.5)
-
-        this.addBlock(editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), offsets[2].plus(vec(-60, -90)))
-        this.addBlock(editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), offsets[2].plus(vec(-60, -180)))
-        this.addBlock(editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), offsets[4].plus(vec(-60, -90)))
-        this.addBlock(editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), offsets[4].plus(vec(-60, -180)))
+        let colons = false
 
         
         const i = setInterval(() => {
             if (eventStart == 0) return
             let n =  eventStart - Math.floor(Date.now()/1000)
-            if (n > 0) this.update(n)
+            if (n > 0) {
+                if (!colons) {this.addColons(); colons = true}
+                this.update(n)
+            }
             else if (n <= 0) {
+                if (colons) {this.removColons(); colons = false}
                 this.update(n, true)
-                clearInterval(i)
             }
         }, 1000) 
 
         
+    }
+
+    public addColons() {
+        this.addDot(this.editorNode, choose(this.textures), offsets[2].plus(vec(-60, -90)), choose(PALLETES[0]), 0.5)
+        this.addDot(this.editorNode, choose(this.textures), offsets[2].plus(vec(-60, -180)), choose(PALLETES[0]), 0.5)
+        this.addDot(this.editorNode, choose(this.textures), offsets[4].plus(vec(-60, -90)), choose(PALLETES[0]), 0.5)
+        this.addDot(this.editorNode, choose(this.textures), offsets[4].plus(vec(-60, -180)), choose(PALLETES[0]), 0.5)
+
+        this.addDot(this.editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), offsets[2].plus(vec(-60, -90)))
+        this.addDot(this.editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), offsets[2].plus(vec(-60, -180)))
+        this.addDot(this.editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), offsets[4].plus(vec(-60, -90)))
+        this.addDot(this.editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), offsets[4].plus(vec(-60, -180)))
+    }
+
+    public removColons() {
+        this.colons.forEach(c => c.destroy())
+        this.colons = []
     }
 
     public update(time: number, clear = false) {
@@ -255,7 +282,7 @@ export class CountDownNode extends PIXI.Container {
                         Math.floor(seconds / 10), seconds % 10]
         
         for (let i = 0; i < 6; i++) {
-            const current = DIGITS[this.state[i]]
+            const current = this.state[i] != null ? DIGITS[this.state[i]] : CLEAR
             const next = clear ? CLEAR : DIGITS[target[i]]
 
             for (let y = 0; y < current.length; y ++) {
@@ -346,7 +373,7 @@ export class CountDownNode extends PIXI.Container {
 
         }
 
-        this.state = target
+        this.state = clear ? [null, null, null, null, null, null] : target
 
     }
 
@@ -401,7 +428,7 @@ export class CountDownNode extends PIXI.Container {
     }
 
     makeDigit(editorNode, i) {
-        const digit = DIGITS[this.state[i]]
+        const digit = this.state[i] != null ? DIGITS[this.state[i]] : CLEAR
         // make digit out of sprite
         const digitContainer = new PIXI.Container()
         const decoContainer = new PIXI.Container()
@@ -444,7 +471,7 @@ export class CountDownNode extends PIXI.Container {
         return [digitContainer, decoContainer]
     }
 
-    addBlock(editorNode, tex, pos, tint = 0xffffff, opacity = 1) {
+    addDot(editorNode, tex, pos, tint = 0xffffff, opacity = 1) {
         const s = new PIXI.Sprite(tex)
         s.scale.set(0.25)
         s.anchor.set(0.5)
@@ -453,6 +480,7 @@ export class CountDownNode extends PIXI.Container {
         s.tint = tint
         s.alpha = opacity
         editorNode.world.addChild(s)
+        this.colons.push(s)
     }
     
 

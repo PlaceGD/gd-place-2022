@@ -79,6 +79,7 @@ export function storePosState(app: EditorApp) {
     )
 }
 
+
 export class EditorApp {
     public dragging: null | { prevCamera: Vector; prevMouse: Vector } = null
     public pinching: null | { prevZoom: number } = null

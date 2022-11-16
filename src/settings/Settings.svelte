@@ -2,7 +2,7 @@
     import { transform } from "svelte-motion"
     import { toGradient } from "../editor/app"
     import { currentUserData } from "../firebase/auth"
-    import { getUsernameColors } from "../firebase/database"
+    import { getUsernameColors, streamLink } from "../firebase/database"
     import { settings, saveSettings, settings_writable } from "./settings"
     let settingsOpen = false
 </script>
@@ -83,7 +83,9 @@
         >
             <b> Colored names: </b> if you want your name tag to be a different
             color, send the color you want in a donation in
-            <a href="https://www.youtube.com/c/Spu7Nix"> Spu7Nix's stream</a>!
+            <a href={$streamLink || "https://www.youtube.com/c/Spu7Nix"}>
+                Spu7Nix's stream</a
+            >!
         </i>
     </div>
 </div>

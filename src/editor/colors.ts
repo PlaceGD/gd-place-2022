@@ -16,6 +16,7 @@ onValue(ref(database, "colors/BG_CHANGES"), (snapshot) => {
 
     BG_CHANGES = JSON.parse(changes)
 })
+// ok
 
 onValue(ref(database, "colors/GROUND_CHANGES"), (snapshot) => {
     const data: string = snapshot.val()

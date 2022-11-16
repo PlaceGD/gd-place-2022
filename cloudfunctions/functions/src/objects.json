@@ -90,6 +90,7 @@
     { "id": 482, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
     { "id": 641, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
     { "id": 642, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
+    { "id": 739, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
     { "id": 643, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
     { "id": 644, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
     { "id": 645, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
@@ -136,6 +137,7 @@
     { "id": 12,   "offset_x": 0,    "offset_y": 0,     "tintable": false, "solid": false, "category": "utilities", "nondeco": true },
     { "id": 13,   "offset_x": 0,    "offset_y": 0,     "tintable": false, "solid": false, "category": "utilities", "nondeco": true },
     { "id": 47,   "offset_x": 0,    "offset_y": 0,     "tintable": false, "solid": false, "category": "utilities", "nondeco": true },
+    
     { "id": 111,  "offset_x": 0,    "offset_y": 0,     "tintable": false, "solid": false, "category": "utilities", "nondeco": true },
     { "id": 660,  "offset_x": 0,    "offset_y": 0,     "tintable": false, "solid": false, "category": "utilities", "nondeco": true },
     { "id": 745,  "offset_x": 0,    "offset_y": 0,     "tintable": false, "solid": false, "category": "utilities", "nondeco": true },
@@ -328,11 +330,7 @@
     { "id": 1830, "offset_x": 0,    "offset_y": 0, "tintable": true, "solid": false, "category": "deco" },
 
     { "id": 1861, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
-    { "id": 870,  "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
-    { "id": 871,  "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
-    { "id": 1266, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
-
-    { "id": 1861, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
+    
     { "id": 1862, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
     { "id": 1863, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
     { "id": 1864, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
@@ -357,4 +355,5 @@
     { "id": 1883, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
     { "id": 1884, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" },
     { "id": 1885, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "blocks" }
+    
 ]

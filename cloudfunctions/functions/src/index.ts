@@ -36,14 +36,27 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     }
 
     const db = admin.database()
+    const uid = request.auth.uid
+
+    // make sure the event has started before placing
+    const { eventStart, placeTimer: timer } = (
+        await db.ref("editorState").get()
+    ).val()
+
+    if (
+        eventStart > Date.now() / 1000 &&
+        uid != "BwgUjk2rKrQ3h52FrrfBpPc3QMo2"
+    ) {
+        throw new functions.https.HttpsError(
+            "permission-denied",
+            "Object placed before event start"
+        )
+    }
 
     // get user last timestamp /userData/$uid/lastPlaced
-    const uid = request.auth.uid
     const lastPlacedRef = db.ref(`/userData/${uid}/lastPlaced`)
     const lastPlaced = (await lastPlacedRef.once("value")).val()
     const now = Date.now()
-
-    const timer = (await db.ref("placeTimer").once("value")).val()
 
     if (lastPlaced && now - lastPlaced < (timer - 5) * 1000) {
         throw new functions.https.HttpsError(
@@ -113,15 +126,28 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
     }
 
     const db = admin.database()
+    const uid = request.auth.uid
+
+    // make sure the event has started before deleting
+    const { eventStart, deleteTimer: timer } = (
+        await db.ref("editorState").get()
+    ).val()
+
+    if (
+        eventStart > Date.now() / 1000 &&
+        uid != "BwgUjk2rKrQ3h52FrrfBpPc3QMo2"
+    ) {
+        throw new functions.https.HttpsError(
+            "permission-denied",
+            "Object placed before event start"
+        )
+    }
 
     // get user last timestamp /userData/$uid/lastDeleted
-    const uid = request.auth.uid
     const userDataRef = db.ref(`/userData/${uid}`)
     const userData = (await userDataRef.once("value")).val()
     const lastDeleted = userData.lastDeleted
     const now = Date.now()
-
-    const timer = (await db.ref("deleteTimer").once("value")).val()
 
     if (lastDeleted && now - lastDeleted < (timer - 5) * 1000) {
         throw new functions.https.HttpsError(
@@ -204,6 +230,10 @@ export const initUserWithUsername = functions.https.onCall(
 
         db.ref(`/userName/${data.username.toLowerCase()}`).set({
             uid: data.uid,
+        })
+
+        db.ref("/userCount").transaction((count) => {
+            return count + 1
         })
 
         return user
