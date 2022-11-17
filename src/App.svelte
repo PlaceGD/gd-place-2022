@@ -9,7 +9,7 @@
     import Page from "./eventdone/Page.svelte"
     import { countingDown, eventStart } from "./countdown/countdown"
 
-    let emailSuccess = "loading"
+    let emailSuccess = "loading (make sure the orginal GD Place tab is open)"
 
     if (isEmailVerification) {
         const onStorage2 = (event) => {
@@ -28,9 +28,9 @@
 
 <SvelteToast options={{ reversed: true, intro: { y: 192 } }} />
 
-<Page />
+<!-- <Page /> -->
 
-<!-- {#if isEmailVerification}
+{#if isEmailVerification}
     <div class="email">
         {emailSuccess}
     </div>
@@ -52,7 +52,8 @@
             />
         </div>
     </div>
-{/if} -->
+{/if}
+
 <style>
     .email {
         display: flex;

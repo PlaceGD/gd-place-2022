@@ -83,7 +83,11 @@
         >
             <b> Colored names: </b> if you want your name tag to be a different
             color, send the color you want in a donation in
-            <a href={$streamLink || "https://www.youtube.com/c/Spu7Nix"}>
+            <a
+                href={$streamLink || "https://www.youtube.com/c/Spu7Nix"}
+                target="_blank"
+                rel="noreferrer"
+            >
                 Spu7Nix's stream</a
             >!
         </i>

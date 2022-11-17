@@ -9,7 +9,7 @@
         "preview": "vite preview",
         "check": "svelte-check --tsconfig ./tsconfig.json",
         "functions": "npm run copy-objects  && cd cloudfunctions && firebase deploy --only functions && cd ..",
-        "host": "npm run copy-objects && vite build && cd cloudfunctions && xcopy ..\\dist .\\public\\ /E && firebase deploy --only hosting && cd ..",
+        "host": "npm run copy-objects && vite build && cd cloudfunctions && xcopy ..\\dist .\\public\\ /E /Y && firebase deploy --only hosting && cd ..",
         "copy-objects": "copy .\\src\\objects.json .\\cloudfunctions\\functions\\src\\objects.json"
     },
     "devDependencies": {
@@ -22,7 +22,8 @@
         "svelte-preprocess": "^4.10.7",
         "tslib": "^2.4.0",
         "typescript": "^4.6.4",
-        "vite": "^3.1.0"
+        "vite": "^3.1.0",
+        "vite-plugin-pages-svelte": "^0.0.2"
     },
     "dependencies": {
         "@pixi/layers": "^1.0.11",
@@ -30,6 +31,7 @@
         "@zerodevx/svelte-toast": "^0.8.0",
         "dotenv": "^16.0.3",
         "firebase": "^9.13.0",
+        "firebase-admin": "^11.2.1",
         "howler": "^2.2.3",
         "iter-tools": "^7.5.0",
         "lodash.debounce": "^4.0.8",
@@ -39,6 +41,7 @@
         "svelte-gestures": "^1.4.1",
         "svelte-motion": "^0.11.3",
         "svelte-skeleton": "^1.3.1",
+        "svelte-spa-router": "^3.3.0",
         "svelte-toast": "^1.0.0",
         "swiper": "^8.4.4",
         "uuid": "^9.0.0",

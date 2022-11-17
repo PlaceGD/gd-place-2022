@@ -31,7 +31,7 @@ export type ObjectInfo = {
     dbname: string
 }
 
-const SPAWN_POS = vec(Math.random() * 30 * 1000, 0)
+export const SPAWN_POS = Math.random() * 30 * 1000 - 27 * 30
 
 const BLENDING_SHADER = `
     varying mediump vec2 vTextureCoord;
@@ -48,6 +48,22 @@ const BLENDING_SHADER = `
 const BLENDING_FILTER = new PIXI.Filter(undefined, BLENDING_SHADER)
 BLENDING_FILTER.blendMode = PIXI.BLEND_MODES.ADD
 
+const BRIGHTNESS_SHADER = `
+    varying mediump vec2 vTextureCoord;
+    uniform sampler2D uSampler;
+
+    void main(void) {
+        gl_FragColor = texture2D(uSampler, vTextureCoord);
+        float brightness = gl_FragColor.r * 0.2126 + gl_FragColor.g * 0.7152 + gl_FragColor.b * 0.0722;
+        bool opaque = gl_FragColor.a > 0.1;
+        
+        gl_FragColor.r = (brightness * 0.5 + 0.5) * float(int(opaque));
+        gl_FragColor.g = 0.0;
+        gl_FragColor.b = 0.0;
+    }
+`
+
+const BRIGTHNESS_FILTER = new PIXI.Filter(undefined, BRIGHTNESS_SHADER)
 export class EditorNode extends PIXI.Container {
     public currentObjectTab: string = "blocks"
     public zoomLevel: number = 0
@@ -71,7 +87,9 @@ export class EditorNode extends PIXI.Container {
     public world: PIXI.Container
 
     public visibleChunks: Set<string> = new Set()
-
+    toggleGround() {
+        this.groundTiling.visible = !settings.hideGround.enabled
+    }
     toggleDecoObjects() {
         for (
             let x = LEVEL_BOUNDS.start.x;
@@ -261,7 +279,7 @@ export class EditorNode extends PIXI.Container {
             this.selectedObjectChunk = null
         }
     }
-    deleteSelectedObject(then) {
+    deleteSelectedObject(then, els) {
         if (this.selectedObjectNode != null) {
             let name = this.selectedObjectNode.name
             let chunk = this.selectedObjectChunk
@@ -274,6 +292,7 @@ export class EditorNode extends PIXI.Container {
                         `Failed to delete object! (${err.message})`,
                         toastErrorTheme
                     )
+                    els()
                 })
             return true
         }
@@ -298,7 +317,20 @@ export class EditorNode extends PIXI.Container {
                 360
             )
             this.objectPreview.scale = clamp(this.objectPreview.scale, 0.5, 2)
-            this.objectPreview.zOrder = clamp(this.objectPreview.zOrder, 1, 100)
+
+            if (
+                this.objectPreview.mainColor.blending ||
+                this.objectPreview.detailColor.blending
+            ) {
+                this.objectPreview.zOrder =
+                    this.objectPreview.zOrder > BLENDING_LAYER_CUTOFF ? 120 : -1
+            } else {
+                this.objectPreview.zOrder = clamp(
+                    this.objectPreview.zOrder,
+                    1,
+                    100
+                )
+            }
         }
     }
 
@@ -355,7 +387,11 @@ export class EditorNode extends PIXI.Container {
         this.world.sortableChildren = true
 
         // console.log("aaaaaaaaa", app, this)
-        const countDown = new CountDownNode(app, this)
+        const countDown = new CountDownNode(
+            app,
+            this,
+            Math.max(editorPosition.x - 27 * 30, 0)
+        )
         this.addChild(countDown)
 
         this.selectableWorld = new PIXI.Container()
@@ -523,7 +559,7 @@ export class EditorNode extends PIXI.Container {
         return pos
     }
 }
-
+const BLENDING_LAYER_CUTOFF = 45
 export class ObjectNode extends PIXI.Container {
     isHovering: boolean = false
     mainColor: GdColor = new GdColor("ffffff", false, 1.0)
@@ -608,8 +644,6 @@ export class ObjectNode extends PIXI.Container {
 
         if (obj.mainColor.hex) this.setMainColor(obj.mainColor)
         if (obj.detailColor.hex) this.setDetailColor(obj.detailColor)
-
-        const BLENDING_LAYER_CUTOFF = 45
 
         if (obj.mainColor.blending || obj.detailColor.blending) {
             this.zOrder = obj.zOrder > BLENDING_LAYER_CUTOFF ? 120 : -1
@@ -870,10 +904,10 @@ export function resetObjectColors(o: ObjectNode) {
             o.mainSprite().alpha = o.mainColor.opacity * 0.1
             o.detailSprite().alpha = o.detailColor.opacity * 0.4
         } else {
-            o.mainSprite().tint = 0xff0000
-            o.detailSprite().tint = 0xff0000
             o.mainSprite().alpha = 1
             o.detailSprite().alpha = 1
+            o.mainSprite().filters = [BRIGTHNESS_FILTER]
+            o.detailSprite().filters = [BRIGTHNESS_FILTER]
         }
     } else {
         o.mainSprite().tint = parseInt(o.mainColor.hex, 16)
@@ -881,6 +915,17 @@ export function resetObjectColors(o: ObjectNode) {
 
         o.mainSprite().alpha = o.mainColor.opacity
         o.detailSprite().alpha = o.detailColor.opacity
+
+        if (o.obj.mainColor.blending) {
+            o.mainSprite().filters = [BLENDING_FILTER]
+        } else {
+            o.mainSprite().filters = []
+        }
+        if (o.obj.detailColor.blending) {
+            o.detailSprite().filters = [BLENDING_FILTER]
+        } else {
+            o.detailSprite().filters = []
+        }
     }
 }
 

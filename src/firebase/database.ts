@@ -300,16 +300,18 @@ export class ChunkNode extends PIXI.Container {
                     this.unsub2 = onChildRemoved(
                         ref(database, `chunks/${chunkName}`),
                         (snapshot) => {
-                            editorNode.deleteLabels.addChild(
-                                new DeleteObjectLabel(
-                                    snapshot.val(),
-                                    this.getChildByName(snapshot.key).position
+                            if (this.getChildByName(snapshot.key).visible)
+                                editorNode.deleteLabels.addChild(
+                                    new DeleteObjectLabel(
+                                        snapshot.val(),
+                                        this.getChildByName(
+                                            snapshot.key
+                                        ).position
+                                    )
                                 )
-                            )
                             this.removeObject(snapshot.key)
                         }
                     )
-
                     this.loaded = true
                     //this.marker.tint = 0x00ff00
                 }

@@ -14,15 +14,16 @@ import { GDObject } from "./object"
 import { settings } from "../settings/settings"
 
 export const toGradient = (cols: number[]): string => {
-    if (cols.length == 1) return `#${cols[0].toString(16)}`
+    console.log(cols[0].toString(16).padStart(6, "0"))
+    if (cols.length == 1) return `#${cols[0].toString(16).padStart(6, "0")}`
     const map = (number, inMin, inMax, outMin, outMax) => {
         return ((number - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin
     }
 
     return `linear-gradient(to bottom, ${cols
         .map((c, i) => {
-            return `#${c.toString(16)}\
-            ${map(i, 0, cols.length - 1, 40, 60)}%`
+            return `#${c.toString(16).padStart(6, "0")}\
+            ${map(i, 0, cols.length - 1, 20, 80)}%`
         })
         .join(",")})`
 }
@@ -78,7 +79,6 @@ export function storePosState(app: EditorApp) {
         })
     )
 }
-
 
 export class EditorApp {
     public dragging: null | { prevCamera: Vector; prevMouse: Vector } = null

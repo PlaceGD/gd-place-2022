@@ -23,9 +23,16 @@
     ],
     "rewrites": [
       {
+        "source": "/setname",
+        "destination": "/setname.html"
+      }
+    ],
+    "redirects": [
+      {
         "source": "**",
         "destination": "/index.html"
       }
     ]
-  }
+  },
+  "cleanUrls": true
 }

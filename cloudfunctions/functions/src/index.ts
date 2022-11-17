@@ -38,10 +38,30 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     const db = admin.database()
     const uid = request.auth.uid
 
-    // make sure the event has started before placing
-    const { eventStart, placeTimer: timer } = (
-        await db.ref("editorState").get()
-    ).val()
+    // get object limit and object count
+    const object = data.text
+
+    let props = object.toString().split(";")
+
+    validateObject(props)
+
+    let chunkX = Math.floor(parseFloat(props[1]) / CHUNK_SIZE.x)
+    let chunkY = Math.floor(parseFloat(props[2]) / CHUNK_SIZE.y)
+
+    // get the stuff
+    const [
+        obj_limit,
+        obj_count,
+        { eventStart, placeTimer: timer },
+        { lastPlaced, username },
+    ] = (
+        await Promise.all([
+            db.ref("chunkObjectLimit").get(),
+            db.ref(`objectCount/${chunkX},${chunkY}`).get(),
+            db.ref("editorState").get(),
+            db.ref(`/userData/${uid}`).get(),
+        ])
+    ).map((a) => a.val())
 
     if (
         eventStart > Date.now() / 1000 &&
@@ -54,8 +74,6 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     }
 
     // get user last timestamp /userData/$uid/lastPlaced
-    const lastPlacedRef = db.ref(`/userData/${uid}/lastPlaced`)
-    const lastPlaced = (await lastPlacedRef.once("value")).val()
     const now = Date.now()
 
     if (lastPlaced && now - lastPlaced < (timer - 5) * 1000) {
@@ -65,27 +83,10 @@ export const placeObject = functions.https.onCall(async (data, request) => {
         )
     }
 
-    // get object limit and object count
-
-    functions.logger.log(`placeObject ${data}`)
-
-    const object = data.text
-
-    let props = object.toString().split(";")
-
-    validateObject(props)
-
-    let chunkX = Math.floor(parseFloat(props[1]) / CHUNK_SIZE.x)
-    let chunkY = Math.floor(parseFloat(props[2]) / CHUNK_SIZE.y)
-
-    const [obj_limit, obj_count] = await Promise.all([
-        db.ref("chunkObjectLimit").get(),
-        db.ref(`objectCount/${chunkX},${chunkY}`).get(),
-    ])
-    if (obj_count.val() >= obj_limit.val()) {
+    if (obj_count >= obj_limit) {
         throw new functions.https.HttpsError(
             "resource-exhausted",
-            "There are too many objects in this area! maybe delete one instead?"
+            "There are too many objects in this area! Maybe delete one instead?"
         )
     }
 
@@ -95,19 +96,16 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     // reset timer
     if (uid != "BwgUjk2rKrQ3h52FrrfBpPc3QMo2")
         // :mabbog:
-        await lastPlacedRef.set(now)
+        await db.ref(`/userData/${uid}/lastPlaced`).set(now)
 
-    db.ref(`/userData/${uid}/username`)
-        .get()
-        .then((username) => {
-            db.ref(`/userPlaced/${key.key}`).set(username.val())
-        })
+    db.ref(`/userPlaced/${key.key}`).set(username)
 
     // add to history
     db.ref(`/history`).push({
         key: key.key,
         placedObject: object,
         timeStamp: now,
+        username,
     })
 
     // add to object count
@@ -129,9 +127,13 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
     const uid = request.auth.uid
 
     // make sure the event has started before deleting
-    const { eventStart, deleteTimer: timer } = (
-        await db.ref("editorState").get()
-    ).val()
+
+    const [{ eventStart, deleteTimer: timer }, userData] = (
+        await Promise.all([
+            db.ref("editorState").get(),
+            db.ref(`/userData/${uid}`).get(),
+        ])
+    ).map((a) => a.val())
 
     if (
         eventStart > Date.now() / 1000 &&
@@ -144,8 +146,6 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
     }
 
     // get user last timestamp /userData/$uid/lastDeleted
-    const userDataRef = db.ref(`/userData/${uid}`)
-    const userData = (await userDataRef.once("value")).val()
     const lastDeleted = userData.lastDeleted
     const now = Date.now()
 
@@ -163,8 +163,6 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
             "Object id not provided"
         )
     }
-
-    functions.logger.log(`deleteobject ${data.chunkId} ${data.objId}`)
 
     const ref = db.ref(`/chunks/${data.chunkId}/${data.objId}`)
     ref.set(userData.username).then(() => ref.remove())

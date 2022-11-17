@@ -38,7 +38,7 @@
     import { onMount } from "svelte"
     import { settings, settings_writable } from "../settings/settings"
     import { now, object_without_properties } from "svelte/internal"
-    import { getPlacedUsername } from "./nodes"
+    import { getPlacedUsername, SPAWN_POS } from "./nodes"
     import { get, onValue, ref } from "firebase/database"
     import { database } from "../firebase/init"
     import {
@@ -46,6 +46,7 @@
         eventStart,
         eventStartWritable,
     } from "../countdown/countdown"
+    import { clamp } from "../utils/math"
 
     $: Object.keys(settings).forEach((key) => {
         settings[key] = $settings_writable[key]
@@ -85,7 +86,7 @@
         )
 
         if (!editorPosition) {
-            editorPosition = { x: 27 * 30, y: 4, zoom: -3 }
+            editorPosition = { x: SPAWN_POS + 27 * 30, y: 4, zoom: -3 }
         }
 
         if (data.get("x")) {
@@ -97,6 +98,8 @@
         if (data.get("zoom")) {
             editorPosition.zoom = parseInt(data.get("zoom")!)
         }
+
+        editorPosition.zoom = clamp(editorPosition.zoom, MIN_ZOOM, MAX_ZOOM)
 
         pixiAppStore.set(new EditorApp($pixiCanvas, editorPosition))
         switchMenu(EditorMenu.Build)
@@ -191,6 +194,13 @@
     mobileScreenQuery.addEventListener("change", () => {
         mobileScreen = mobileScreenQuery.matches
     })
+
+    let menuIndex = 0
+    function nextMenu(): EditorMenu {
+        return [EditorMenu.Build, EditorMenu.Edit, EditorMenu.Delete][
+            menuIndex++ % 3
+        ]
+    }
 </script>
 
 <svelte:window
@@ -324,10 +334,7 @@
             storePosState(pixiApp)
         }}
         on:pointerup={(e) => {
-            // middle click
-            // if (e.button === 1) {
-            //     return
-            // }
+            if ($countingDown) return
 
             pixiApp.pinching = null
             pixiApp.mousePos = vec(e.pageX, e.pageY)
@@ -1066,6 +1073,7 @@
                             placeTimeLeft == 0 &&
                             !placeButtonDisabled
                         ) {
+                            placeButtonDisabled = true
                             addObjectToLevel(pixiApp.editorNode.objectPreview)
                                 .catch((err) => {
                                     console.log(err)
@@ -1082,8 +1090,6 @@
                                     placeButtonDisabled = false
                                 })
                         }
-
-                        placeButtonDisabled = true
                     }}
                 >
                     <div
@@ -1117,12 +1123,17 @@
                             !deleteButtonDisabled &&
                             pixiApp.editorNode.selectedObjectNode != null
                         ) {
-                            pixiApp.editorNode.deleteSelectedObject(() => {
-                                deleteButtonDisabled = false
-                            })
-                        }
+                            deleteButtonDisabled = true
 
-                        deleteButtonDisabled = true
+                            pixiApp.editorNode.deleteSelectedObject(
+                                () => {
+                                    deleteButtonDisabled = false
+                                },
+                                () => {
+                                    deleteButtonDisabled = false
+                                }
+                            )
+                        }
                     }}
                 >
                     <div
@@ -1152,20 +1163,18 @@
         {#if $countingDown}
             {#if $streamLink != null}
                 <div class="livestream_link">
-                    Join the <a href={$streamLink}> official livestream </a>
+                    Join the <a
+                        href={$streamLink}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        official livestream
+                    </a>
                 </div>
             {/if}
 
             <div class="count_down_message">
-                <div class="count_down_content">
-                    <div class="loading">
-                        <img
-                            src="/loadinganimcss.svg"
-                            alt="Loading icon"
-                            class="loading_icon"
-                        />
-                    </div>
-
+                {#if mobileScreen}
                     <div style:margin="0" class="count_down_text">
                         <div class="user_counter">
                             <b style:font-size="calc(var(--font-large) * 2)">
@@ -1176,7 +1185,30 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                {:else}
+                    <div class="count_down_content">
+                        <div class="loading">
+                            <img
+                                src="/loadinganimcss.svg"
+                                alt="Loading icon"
+                                class="loading_icon"
+                            />
+                        </div>
+
+                        <div style:margin="0" class="count_down_text">
+                            <div class="user_counter">
+                                <b
+                                    style:font-size="calc(var(--font-large) * 2)"
+                                >
+                                    {$userCount}
+                                </b>
+                                <div style="opacity:0.8">
+                                    creators have signed up
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {/if}
             </div>
         {:else}
             <div class="login_requirement_message">
@@ -1453,6 +1485,7 @@
     .count_down_message {
         width: calc(100% - 32px);
         height: fit-content;
+        min-height: 100px;
         max-height: 25vh;
         z-index: 10;
         display: flex;
@@ -1546,7 +1579,7 @@
     .livestream_link {
         width: fit-content;
         height: fit-content;
-        max-height: 5vh;
+
         z-index: 12;
         padding: 5px;
         padding-left: 20px;

@@ -14,6 +14,13 @@ const DEAFULT_SETTINGS = {
         enabled: false,
         label: "Disable background colors",
     },
+    hideGround: {
+        enabled: false,
+        label: "Hide ground",
+        cb: () => {
+            pixiApp?.editorNode?.toggleGround()
+        },
+    },
     showObjInfo: {
         enabled: false,
         label: "Show object info on select",

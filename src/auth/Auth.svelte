@@ -420,7 +420,7 @@
                                                     )
 
                                                     toast.push(
-                                                        "Email sent!",
+                                                        "Email sent! (check your spam folder)",
                                                         toastSuccessTheme
                                                     )
                                                 })

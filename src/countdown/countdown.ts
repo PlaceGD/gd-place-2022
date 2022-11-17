@@ -197,14 +197,7 @@ const shuffle = (arr) => {
     }
     return arr;
 }
-const offsets = [
-    vec(195, 315), 
-    vec(195 + DIGITS[0][0].length * 30 + 30, 315), 
-    vec(195 + DIGITS[0][0].length * 60 + 120, 315), 
-    vec(195 + DIGITS[0][0].length * 90 + 150, 315), 
-    vec(195 + DIGITS[0][0].length * 120 + 240, 315), 
-    vec(195 + DIGITS[0][0].length * 150 + 270, 315)
-]
+
 
 const PALLETES = shuffle([[0x01949A, 0x004369, 0xDB1F48], [0xD43790, 0xEC8FD0, 0x870A30], [0x3D550C, 0x81B622, 0xECF87F, 0x59981A], [0x21B6A8, 0xA3EBB1, 0x18A558]])
 
@@ -223,8 +216,19 @@ export class CountDownNode extends PIXI.Container {
 
     public colons = []
 
-    constructor(app: PIXI.Application, public editorNode: EditorNode) {
+    public offsets
+
+    constructor(app: PIXI.Application, public editorNode: EditorNode, x_pos: number) {
         super()
+
+        this.offsets = [
+            vec(x_pos + 195, 315), 
+            vec(x_pos + 195 + DIGITS[0][0].length * 30 + 30, 315), 
+            vec(x_pos + 195 + DIGITS[0][0].length * 60 + 120, 315), 
+            vec(x_pos + 195 + DIGITS[0][0].length * 90 + 150, 315), 
+            vec(x_pos + 195 + DIGITS[0][0].length * 120 + 240, 315), 
+            vec(x_pos + 195 + DIGITS[0][0].length * 150 + 270, 315)
+        ]
         
         this.textures = objects.map(o => PIXI.Texture.from(`/gd/objects/main/${o}.png`))
         this.edgeTextures = edges.reduce((acc, o) => {
@@ -256,15 +260,15 @@ export class CountDownNode extends PIXI.Container {
     }
 
     public addColons() {
-        this.addDot(this.editorNode, choose(this.textures), offsets[2].plus(vec(-60, -90)), choose(PALLETES[0]), 0.5)
-        this.addDot(this.editorNode, choose(this.textures), offsets[2].plus(vec(-60, -180)), choose(PALLETES[0]), 0.5)
-        this.addDot(this.editorNode, choose(this.textures), offsets[4].plus(vec(-60, -90)), choose(PALLETES[0]), 0.5)
-        this.addDot(this.editorNode, choose(this.textures), offsets[4].plus(vec(-60, -180)), choose(PALLETES[0]), 0.5)
+        this.addDot(this.editorNode, choose(this.textures), this.offsets[2].plus(vec(-60, -90)), choose(PALLETES[0]), 0.5)
+        this.addDot(this.editorNode, choose(this.textures), this.offsets[2].plus(vec(-60, -180)), choose(PALLETES[0]), 0.5)
+        this.addDot(this.editorNode, choose(this.textures), this.offsets[4].plus(vec(-60, -90)), choose(PALLETES[0]), 0.5)
+        this.addDot(this.editorNode, choose(this.textures), this.offsets[4].plus(vec(-60, -180)), choose(PALLETES[0]), 0.5)
 
-        this.addDot(this.editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), offsets[2].plus(vec(-60, -90)))
-        this.addDot(this.editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), offsets[2].plus(vec(-60, -180)))
-        this.addDot(this.editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), offsets[4].plus(vec(-60, -90)))
-        this.addDot(this.editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), offsets[4].plus(vec(-60, -180)))
+        this.addDot(this.editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), this.offsets[2].plus(vec(-60, -90)))
+        this.addDot(this.editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), this.offsets[2].plus(vec(-60, -180)))
+        this.addDot(this.editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), this.offsets[4].plus(vec(-60, -90)))
+        this.addDot(this.editorNode, PIXI.Texture.from(`/gd/objects/main/1210.png`), this.offsets[4].plus(vec(-60, -180)))
     }
 
     public removColons() {
@@ -306,8 +310,8 @@ export class CountDownNode extends PIXI.Container {
 
                         const settings = getObjSettings(id)
                         
-                        s.x = x * 30 + offsets[i].x + Math.cos(angle) * settings.offset_x + Math.sin(angle) * settings.offset_y
-                        s.y = -y * 30 + offsets[i].y + Math.sin(angle) * settings.offset_x - Math.cos(angle) * settings.offset_y
+                        s.x = x * 30 + this.offsets[i].x + Math.cos(angle) * settings.offset_x + Math.sin(angle) * settings.offset_y
+                        s.y = -y * 30 + this.offsets[i].y + Math.sin(angle) * settings.offset_x - Math.cos(angle) * settings.offset_y
                         this.digits[i][0].addChild(s)
                     }
 
@@ -316,8 +320,8 @@ export class CountDownNode extends PIXI.Container {
                         s2.anchor.set(0.5)
                         s2.name = `${x},${y}`
                         s2.scale.set(0.25, -0.25)
-                        s2.x = x * 30 + offsets[i].x
-                        s2.y = -y * 30 + offsets[i].y
+                        s2.x = x * 30 + this.offsets[i].x
+                        s2.y = -y * 30 + this.offsets[i].y
                         s2.tint = choose(PALLETES[this.palleteState[i]])
                         s2.alpha = 0.5
                         this.digits[i][1].addChild(s2)
@@ -356,8 +360,8 @@ export class CountDownNode extends PIXI.Container {
                                 const angle = (rot - 90) * Math.PI / 180
                                 s.rotation = angle
                                 const settings = getObjSettings(id)
-                                s.x = x * 30 + offsets[i].x + Math.cos(angle) * settings.offset_x + Math.sin(angle) * settings.offset_y
-                                s.y = -y * 30 + offsets[i].y + Math.sin(angle) * settings.offset_x - Math.cos(angle) * settings.offset_y
+                                s.x = x * 30 + this.offsets[i].x + Math.cos(angle) * settings.offset_x + Math.sin(angle) * settings.offset_y
+                                s.y = -y * 30 + this.offsets[i].y + Math.sin(angle) * settings.offset_x - Math.cos(angle) * settings.offset_y
                             }, t2)
                             setTimeout(() => this.digits[i][0].getChildByName(`${x},${y}`).tint = 0xffffff, t3)
                         } else if (id !== id2 || rot !== rot2) {
@@ -440,8 +444,8 @@ export class CountDownNode extends PIXI.Container {
                     s2.anchor.set(0.5)
                     s2.name = `${x},${y}`
                     s2.scale.set(0.25, -0.25)
-                    s2.x = x * 30 + offsets[i].x
-                    s2.y = -y * 30 + offsets[i].y
+                    s2.x = x * 30 + this.offsets[i].x
+                    s2.y = -y * 30 + this.offsets[i].y
                     
                     s2.tint = choose(PALLETES[this.palleteState[i]])
                     s2.alpha = 0.5
@@ -459,8 +463,8 @@ export class CountDownNode extends PIXI.Container {
 
                     const settings = getObjSettings(id)
                     
-                    s.x = x * 30 + offsets[i].x + Math.cos(angle) * settings.offset_x + Math.sin(angle) * settings.offset_y
-                    s.y = -y * 30 + offsets[i].y + Math.sin(angle) * settings.offset_x - Math.cos(angle) * settings.offset_y
+                    s.x = x * 30 + this.offsets[i].x + Math.cos(angle) * settings.offset_x + Math.sin(angle) * settings.offset_y
+                    s.y = -y * 30 + this.offsets[i].y + Math.sin(angle) * settings.offset_x - Math.cos(angle) * settings.offset_y
                     digitContainer.addChild(s)
                 }
             }
