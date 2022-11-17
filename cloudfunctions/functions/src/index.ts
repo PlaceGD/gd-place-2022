@@ -11,10 +11,11 @@ const CHUNK_SIZE = { x: 20 * 30, y: 20 * 30 }
 function vec(x: number, y: number) {
     return { x, y }
 }
+const SONG_LENGTH = 250
 
 const LEVEL_BOUNDS = {
     start: vec(0, 0),
-    end: vec(30 * 3000, 30 * 80),
+    end: vec(30 * Math.round(SONG_LENGTH * 10.3761348898), 30 * 80),
 }
 
 let idMapping: Record<number, any> = {}

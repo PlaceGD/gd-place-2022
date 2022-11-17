@@ -20,9 +20,11 @@ import { pixiApp, selectedObject } from "./app"
 import { settings } from "../settings/settings"
 import { CountDownNode } from "../countdown/countdown"
 
+const SONG_LENGTH = 250
+
 export const LEVEL_BOUNDS = {
     start: vec(0, 0),
-    end: vec(30 * 3000, 30 * 80),
+    end: vec(30 * Math.round(SONG_LENGTH * 10.3761348898), 30 * 80),
 }
 const GROUND_SCALE = (30 * 4.25) / 512
 
@@ -31,7 +33,7 @@ export type ObjectInfo = {
     dbname: string
 }
 
-export const SPAWN_POS = Math.random() * 30 * 1000 - 27 * 30
+export const SPAWN_POS = Math.random() * LEVEL_BOUNDS.end.x - 27 * 30
 
 const BLENDING_SHADER = `
     varying mediump vec2 vTextureCoord;
