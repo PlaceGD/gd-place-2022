@@ -43,8 +43,8 @@
     import { database } from "../firebase/init"
     import {
         countingDown,
-        eventStart,
         eventStartWritable,
+        eventEnded,
     } from "../countdown/countdown"
     import { clamp } from "../utils/math"
 
@@ -333,6 +333,9 @@
             // set editor position to local storage
             storePosState(pixiApp)
         }}
+        on:pinchup={() => {
+            pixiApp.pinching = null
+        }}
         on:pointerup={(e) => {
             if ($countingDown) return
 
@@ -489,7 +492,7 @@
         </div>
     {/if}
 
-    {#if $canEdit && $eventStartWritable != null && $countingDown != null && !$countingDown && !settings.hideMenu.enabled}
+    {#if $canEdit && $eventStartWritable != null && $countingDown != null && !$countingDown && !settings.hideMenu.enabled && !$eventEnded}
         <div class="menu">
             <div
                 class="side_panel menu_panel"
@@ -1159,7 +1162,7 @@
                 </button>
             {/if}
         </div>
-    {:else if !settings.hideMenu.enabled && $countingDown != null && $eventStartWritable != null}
+    {:else if !settings.hideMenu.enabled && $countingDown != null && $eventStartWritable != null && !$eventEnded}
         {#if $countingDown}
             {#if $streamLink != null}
                 <div class="livestream_link">
@@ -1210,7 +1213,7 @@
                     </div>
                 {/if}
             </div>
-        {:else}
+        {:else if !$eventEnded}
             <div class="login_requirement_message">
                 You must be signed in to help build the level!
                 <div style="transform:scale(0.8);opacity:0.5;margin-top:10px;">

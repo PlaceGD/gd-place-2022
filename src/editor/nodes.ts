@@ -33,7 +33,7 @@ export type ObjectInfo = {
     dbname: string
 }
 
-export const SPAWN_POS = Math.random() * LEVEL_BOUNDS.end.x - 27 * 30
+export const SPAWN_POS = 0 //Math.random() * LEVEL_BOUNDS.end.x - 27 * 30
 
 const BLENDING_SHADER = `
     varying mediump vec2 vTextureCoord;

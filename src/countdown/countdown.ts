@@ -19,8 +19,18 @@ export let eventStart = null
 export let eventStartWritable = writable(null)
 onValue(ref(database, "editorState/eventStart"), (snapshot) => {
     eventStart = snapshot.val()
+
+    if (eventStart > Date.now() / 1000) {
+        countingDown.set(true)
+    }
+
     eventStartWritable.set(eventStart)
     console.log(eventStart)
+})
+
+export let eventEnded = writable(null)
+onValue(ref(database, "editorState/eventEnded"), (snapshot) => {
+    eventEnded.set(snapshot.val())
 })
 
 export let countingDown = writable(null)
