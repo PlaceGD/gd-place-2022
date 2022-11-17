@@ -37,10 +37,7 @@
     import { MAX_ZOOM, MIN_ZOOM, toastErrorTheme } from "../const"
     import { onMount } from "svelte"
     import { settings, settings_writable } from "../settings/settings"
-    import { now, object_without_properties } from "svelte/internal"
     import { getPlacedUsername, SPAWN_POS } from "./nodes"
-    import { get, onValue, ref } from "firebase/database"
-    import { database } from "../firebase/init"
     import {
         countingDown,
         eventStartWritable,
@@ -1520,7 +1517,7 @@
     .count_down_content {
         width: fit-content;
         display: grid;
-        grid-template-columns: 30% 70%;
+        grid-template-columns: 30% 80%;
         margin: 20px;
         flex-direction: row;
         animation-name: slide;

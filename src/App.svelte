@@ -7,7 +7,11 @@
     import { currentUserData } from "./firebase/auth"
     import { isEmailVerification } from "./firebase/auth"
     import Page from "./eventdone/Page.svelte"
-    import { countingDown, eventStart } from "./countdown/countdown"
+    import {
+        countingDown,
+        eventStartWritable,
+        eventEnded,
+    } from "./countdown/countdown"
 
     let emailSuccess = "loading (make sure the orginal GD Place tab is open)"
 
@@ -37,10 +41,12 @@
 {:else if typeof $currentUserData != "string"}
     <Editor />
     <div class="auth_settings">
-        {#if !$countingDown}
-            <Settings />
+        {#if !$eventEnded}
+            {#if !$countingDown && $eventStartWritable != null}
+                <Settings />
+            {/if}
+            <Auth loadedUserData={$currentUserData} />
         {/if}
-        <Auth loadedUserData={$currentUserData} />
     </div>
 {:else}
     <div class="loading_container">
