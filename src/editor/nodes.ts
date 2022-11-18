@@ -46,7 +46,6 @@ const BLENDING_SHADER = `
         gl_FragColor.b *= gl_FragColor.a;
     }
 `
-
 const BLENDING_FILTER = new PIXI.Filter(undefined, BLENDING_SHADER)
 BLENDING_FILTER.blendMode = PIXI.BLEND_MODES.ADD
 
@@ -64,8 +63,8 @@ const BRIGHTNESS_SHADER = `
         gl_FragColor.b = 0.0;
     }
 `
-
 const BRIGTHNESS_FILTER = new PIXI.Filter(undefined, BRIGHTNESS_SHADER)
+
 export class EditorNode extends PIXI.Container {
     public currentObjectTab: string = "blocks"
     public zoomLevel: number = 0
