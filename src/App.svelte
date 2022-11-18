@@ -6,7 +6,7 @@
     import Editor from "./editor/Editor.svelte"
     import { currentUserData } from "./firebase/auth"
     import { isEmailVerification } from "./firebase/auth"
-    import Page from "./eventdone/Page.svelte"
+    import Landing from "./landingpage/Landing.svelte"
     import {
         countingDown,
         eventStartWritable,
@@ -32,7 +32,7 @@
 
 <SvelteToast options={{ reversed: true, intro: { y: 192 } }} />
 
-<!-- <Page /> -->
+<!-- <Landing /> -->
 
 {#if isEmailVerification}
     <div class="email">

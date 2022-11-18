@@ -1178,7 +1178,7 @@
                     <div style:margin="0" class="count_down_text">
                         <div class="user_counter">
                             <b style:font-size="calc(var(--font-large) * 2)">
-                                {$userCount}
+                                {$userCount?.toLocaleString()}
                             </b>
                             <div style="opacity:0.8">
                                 creators have signed up
