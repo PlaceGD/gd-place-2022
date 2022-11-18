@@ -82,7 +82,7 @@
                 : "0s"}
         >
             <b> Colored names: </b> if you want your name tag to be a different
-            color, send the color you want in a donation in
+            color, send your username and the color you want in a donation in
             <a
                 href={$streamLink || "https://www.youtube.com/c/Spu7Nix"}
                 target="_blank"
