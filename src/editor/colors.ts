@@ -59,8 +59,8 @@ function getColor(time: number, changes: any) {
 
 export function getColors(time: number) {
     const a = {
-        bg: getColor(time, BG_CHANGES),
-        ground: getColor(time, GROUND_CHANGES),
+        bg: getColor(time + 0.15, BG_CHANGES),
+        ground: getColor(time + 0.15, GROUND_CHANGES),
     }
 
     return a

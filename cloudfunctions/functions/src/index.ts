@@ -4,6 +4,8 @@ import { initializeApp } from "firebase-admin/app"
 
 import objects from "./objects.json"
 
+import { BAD_WORDS } from "./badwords"
+
 export * from "./gd"
 
 const CHUNK_SIZE = { x: 20 * 30, y: 20 * 30 }
@@ -50,12 +52,7 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     let chunkY = Math.floor(parseFloat(props[2]) / CHUNK_SIZE.y)
 
     // get the stuff
-    const [
-        obj_limit,
-        obj_count,
-        { eventStart, placeTimer: timer },
-        { lastPlaced, username },
-    ] = (
+    let [obj_limit, obj_count, { eventStart, placeTimer: timer }, userData] = (
         await Promise.all([
             db.ref("chunkObjectLimit").get(),
             db.ref(`objectCount/${chunkX},${chunkY}`).get(),
@@ -64,20 +61,18 @@ export const placeObject = functions.https.onCall(async (data, request) => {
         ])
     ).map((a) => a.val())
 
-    if (
-        eventStart > Date.now() / 1000 &&
-        uid != "BwgUjk2rKrQ3h52FrrfBpPc3QMo2"
-    ) {
+    if (eventStart > Date.now() / 1000 && !userData?.admin) {
         throw new functions.https.HttpsError(
             "permission-denied",
             "Object placed before event start"
         )
     }
+    if (userData.placeTimer) timer = userData.placeTimer
 
     // get user last timestamp /userData/$uid/lastPlaced
     const now = Date.now()
 
-    if (lastPlaced && now - lastPlaced < (timer - 5) * 1000) {
+    if (userData.lastPlaced && now - userData.lastPlaced < (timer - 5) * 1000) {
         throw new functions.https.HttpsError(
             "resource-exhausted",
             "Object placed before cooldown"
@@ -95,18 +90,18 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     let key = await ref.push(object)
 
     // reset timer
-    if (uid != "BwgUjk2rKrQ3h52FrrfBpPc3QMo2")
-        // :mabbog:
-        await db.ref(`/userData/${uid}/lastPlaced`).set(now)
+    //if (uid != "BwgUjk2rKrQ3h52FrrfBpPc3QMo2")
+    // :mabbog:
+    await db.ref(`/userData/${uid}/lastPlaced`).set(now)
 
-    db.ref(`/userPlaced/${key.key}`).set(username)
+    db.ref(`/userPlaced/${key.key}`).set(userData.username)
 
     // add to history
     db.ref(`/history`).push({
         key: key.key,
         placedObject: object,
         timeStamp: now,
-        username,
+        username: userData.username,
     })
 
     // add to object count
@@ -129,22 +124,21 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
 
     // make sure the event has started before deleting
 
-    const [{ eventStart, deleteTimer: timer }, userData] = (
+    let [{ eventStart, deleteTimer: timer }, userData] = (
         await Promise.all([
             db.ref("editorState").get(),
             db.ref(`/userData/${uid}`).get(),
         ])
     ).map((a) => a.val())
 
-    if (
-        eventStart > Date.now() / 1000 &&
-        uid != "BwgUjk2rKrQ3h52FrrfBpPc3QMo2"
-    ) {
+    if (eventStart > Date.now() / 1000 && !userData?.admin) {
         throw new functions.https.HttpsError(
             "permission-denied",
             "Object placed before event start"
         )
     }
+
+    if (userData.deleteTimer) timer = userData.deleteTimer
 
     // get user last timestamp /userData/$uid/lastDeleted
     const lastDeleted = userData.lastDeleted
@@ -169,8 +163,8 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
     ref.set(userData.username).then(() => ref.remove())
 
     // reset timer
-    if (uid != "BwgUjk2rKrQ3h52FrrfBpPc3QMo2")
-        await db.ref(`/userData/${uid}/lastDeleted`).set(now)
+    //if (uid != "BwgUjk2rKrQ3h52FrrfBpPc3QMo2")
+    await db.ref(`/userData/${uid}/lastDeleted`).set(now)
 
     db.ref(`/userPlaced/${data.objId}`).remove()
     // add to history
@@ -209,6 +203,16 @@ export const initUserWithUsername = functions.https.onCall(
         const usernameExists = db.ref(
             `/userName/${data.username.toLowerCase()}`
         )
+
+        // check username for bad words
+        BAD_WORDS.forEach((word) => {
+            if (data.username.toLowerCase().includes(word)) {
+                throw new functions.https.HttpsError(
+                    "invalid-argument",
+                    "Invalid username"
+                )
+            }
+        })
 
         const val = (await usernameExists.get()).val()
         if (val != null) {
@@ -312,7 +316,7 @@ function validateObject(props: string[]) {
     }
 
     // check that the zOrder is valid
-    if (parseInt(zOrder) < 0 || parseInt(zOrder) > 100) {
+    if (parseInt(zOrder) < -1 || parseInt(zOrder) > 121) {
         throw new functions.https.HttpsError(
             "invalid-argument",
             "Invalid object zOrder"

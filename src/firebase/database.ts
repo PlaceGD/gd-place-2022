@@ -29,18 +29,18 @@ canEdit.subscribe((value) => {
     canEditValue = value
 })
 
-export let placeTimerMax = writable(0)
+export let placeTimerMaxCommon = writable(0)
 
 onValue(ref(database, "editorState/placeTimer"), (snapshot) => {
-    placeTimerMax.set(snapshot.val())
-    console.log("editorState/placeTimer", snapshot.val())
+    placeTimerMaxCommon.set(snapshot.val())
+    // console.log("editorState/placeTimer", snapshot.val())
 })
 
-export let deleteTimerMax = writable(0)
+export let deleteTimerMaxCommon = writable(0)
 
 onValue(ref(database, "editorState/deleteTimer"), (snapshot) => {
-    deleteTimerMax.set(snapshot.val())
-    console.log("editorState/deleteTimer", snapshot.val())
+    deleteTimerMaxCommon.set(snapshot.val())
+    // console.log("editorState/deleteTimer", snapshot.val())
 })
 
 export async function getHistory() {

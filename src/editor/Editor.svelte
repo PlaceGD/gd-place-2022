@@ -26,9 +26,9 @@
     import { lazyLoad } from "../lazyLoad"
     import {
         addObjectToLevel,
-        deleteTimerMax,
+        deleteTimerMaxCommon,
         getUsernameColors,
-        placeTimerMax,
+        placeTimerMaxCommon,
         streamLink,
         updateObjectCategory,
         userCount,
@@ -59,6 +59,14 @@
                 pixiApp.editorNode.removePreview()
             pixiApp.editorNode.selectedObjectId = 1
         }
+    }
+
+    let placeTimerMax, deleteTimerMax
+    $: {
+        placeTimerMax =
+            $currentUserData?.data?.placeTimer || $placeTimerMaxCommon
+        deleteTimerMax =
+            $currentUserData?.data?.deleteTimer || $deleteTimerMaxCommon
     }
 
     const switchMenu = (to: EditorMenu) => {
@@ -96,7 +104,7 @@
             editorPosition.zoom = parseInt(data.get("zoom")!)
         }
 
-        editorPosition.zoom = clamp(editorPosition.zoom, MIN_ZOOM, MAX_ZOOM)
+        editorPosition.zoom = clamp(editorPosition.zoom, MAX_ZOOM, MIN_ZOOM)
 
         pixiAppStore.set(new EditorApp($pixiCanvas, editorPosition))
         switchMenu(EditorMenu.Build)
@@ -144,9 +152,9 @@
 
     const updateTimeLeft = () => {
         const now = Date.now()
-        placeTimeLeft = Math.max($placeTimerMax - (now - lastPlaced) / 1000, 0)
+        placeTimeLeft = Math.max(placeTimerMax - (now - lastPlaced) / 1000, 0)
         deleteTimeLeft = Math.max(
-            $deleteTimerMax - (now - lastDeleted) / 1000,
+            deleteTimerMax - (now - lastDeleted) / 1000,
             0
         )
     }
@@ -163,18 +171,18 @@
             if (typeof value.data != "string" && value.data != null) {
                 lastDeleted = value.data.lastDeleted
                 lastPlaced = value.data.lastPlaced
-                if ($placeTimerMax * 1000 - (Date.now() - lastPlaced) > 0) {
+                if (placeTimerMax * 1000 - (Date.now() - lastPlaced) > 0) {
                     let t = setTimeout(() => {
                         placeTimerSound.play()
                         clearTimeout(t)
-                    }, Math.max($placeTimerMax * 1000 - (Date.now() - lastPlaced), 0))
+                    }, Math.max(placeTimerMax * 1000 - (Date.now() - lastPlaced), 0))
                 }
 
-                if ($deleteTimerMax * 1000 - (Date.now() - lastDeleted) > 0) {
+                if (deleteTimerMax * 1000 - (Date.now() - lastDeleted) > 0) {
                     let t2 = setTimeout(() => {
                         deleteTimerSound.play()
                         clearTimeout(t2)
-                    }, Math.max($deleteTimerMax * 1000 - (Date.now() - lastDeleted), 0))
+                    }, Math.max(deleteTimerMax * 1000 - (Date.now() - lastDeleted), 0))
                 }
 
                 updateTimeLeft()
@@ -414,8 +422,7 @@
             height="75"
             id="music_button"
             on:click={() => {
-                pixiApp.playingMusic = !pixiApp.playingMusic
-                if (pixiApp.playingMusic) {
+                if (!pixiApp.playingMusic) {
                     pixiApp.playMusic()
                 } else {
                     pixiApp.stopMusic()
@@ -521,7 +528,7 @@
                                 <div
                                     class="radial_timer"
                                     style:background={gradientFunc(
-                                        1 - placeTimeLeft / $placeTimerMax
+                                        1 - placeTimeLeft / placeTimerMax
                                     )}
                                 />
                             {/if}
@@ -558,7 +565,7 @@
                                 <div
                                     class="radial_timer"
                                     style:background={gradientFunc(
-                                        1 - deleteTimeLeft / $deleteTimerMax
+                                        1 - deleteTimeLeft / deleteTimerMax
                                     )}
                                 />
                             {/if}
@@ -601,7 +608,7 @@
                             <div
                                 class="radial_timer"
                                 style:background={gradientFunc(
-                                    1 - placeTimeLeft / $placeTimerMax
+                                    1 - placeTimeLeft / placeTimerMax
                                 )}
                             />
                         {/if}
@@ -642,7 +649,7 @@
                             <div
                                 class="radial_timer"
                                 style:background={gradientFunc(
-                                    1 - deleteTimeLeft / $deleteTimerMax
+                                    1 - deleteTimeLeft / deleteTimerMax
                                 )}
                             />
                         {/if}
@@ -1180,7 +1187,9 @@
                             <b style:font-size="calc(var(--font-large) * 2)">
                                 {$userCount?.toLocaleString()}
                             </b>
-                            <div style="opacity:0.8">
+                            <div
+                                style="opacity:0.8;font-size:calc(var(--font-large) - 10px);"
+                            >
                                 creators have signed up
                             </div>
                         </div>
@@ -1199,10 +1208,13 @@
                             <div class="user_counter">
                                 <b
                                     style:font-size="calc(var(--font-large) * 2)"
+                                    style:min-width="30%"
                                 >
                                     {$userCount}
                                 </b>
-                                <div style="opacity:0.8">
+                                <div
+                                    style="opacity:0.8;font-size:calc(var(--font-large) - 10px);"
+                                >
                                     creators have signed up
                                 </div>
                             </div>
@@ -1529,7 +1541,7 @@
     .count_down_text {
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
+        justify-content: center;
         gap: 15px;
         align-items: center;
         max-height: inherit;
@@ -1574,6 +1586,7 @@
         color: white;
         font-size: calc(var(--font-large) - 10px);
         text-align: center;
+        min-width: 50vw;
     }
 
     .livestream_link {

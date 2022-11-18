@@ -25,8 +25,10 @@ onValue(ref(database, "editorState/eventStart"), (snapshot) => {
     }
 
     eventStartWritable.set(eventStart)
-    console.log(eventStart)
 })
+// export let eventStart = true
+// export let eventStartWritable = writable(true)
+
 
 export let eventEnded = writable(null)
 onValue(ref(database, "editorState/eventEnded"), (snapshot) => {
@@ -41,6 +43,9 @@ setInterval(() => {
         countingDown.set(false)
     }
 }, 1000)
+
+//export let countingDown = writable(false)
+
 
 const DIGITS = [
     [
@@ -74,7 +79,7 @@ const DIGITS = [
         "######",
         "    ##",
         "    ##",
-        "######",
+        "######", 
         "######",
         "##    ",
         "##    ",

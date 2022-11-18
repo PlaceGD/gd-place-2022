@@ -14,7 +14,7 @@ import { GDObject } from "./object"
 import { settings } from "../settings/settings"
 
 export const toGradient = (cols: number[]): string => {
-    console.log(cols[0].toString(16).padStart(6, "0"))
+    // console.log(cols[0].toString(16).padStart(6, "0"))
     if (cols.length == 1) return `#${cols[0].toString(16).padStart(6, "0")}`
     const map = (number, inMin, inMax, outMin, outMax) => {
         return ((number - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin
@@ -92,6 +92,7 @@ export class EditorApp {
     public music: any
 
     playMusic() {
+        this.playingMusic = true
         let pos = Math.max(
             0,
             -this.canvas.offsetWidth / (2 * this.editorNode.zoom()) +
@@ -105,6 +106,7 @@ export class EditorApp {
 
     stopMusic() {
         this.music.stop()
+        this.playingMusic = false
     }
 
     constructor(public canvas: HTMLCanvasElement, editorPosition) {
@@ -284,6 +286,8 @@ export class EditorApp {
             if (!settings.disableBG.enabled) {
                 if (this.playingMusic) {
                     time = this.music.seek()
+                    if (time >= 250) this.stopMusic()
+
                     let pos = time_to_x(time)
                     this.musicLine.position.x = pos
 
@@ -302,6 +306,7 @@ export class EditorApp {
             } else {
                 if (this.playingMusic) {
                     time = this.music.seek()
+                    if (time >= 250) this.stopMusic()
                     let pos = time_to_x(time)
                     this.musicLine.position.x = pos
                 } else {

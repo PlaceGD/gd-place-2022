@@ -51,6 +51,8 @@ export type UserProperties = {
     username: string
     lastPlaced: number
     lastDeleted: number
+    placeTimer: number | null
+    deleteTimer: number | null
 }
 export type UserData = {
     user: User

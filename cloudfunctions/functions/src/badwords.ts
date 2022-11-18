@@ -1,0 +1,26 @@
+// don't ask do not ask
+
+export const BAD_WORDS = [
+    "faggot",
+    "tranny",
+    "nigars",
+    "nigas",
+    "nigg",
+    "nigg3r",
+    "nigg4h",
+    "nigga",
+    "niggah",
+    "niggahs",
+    "niggar",
+    "niggards",
+    "niggars",
+    "niggas",
+    "niggaz",
+    "nigger",
+    "niggers",
+    "nigglings",
+    "niggor",
+    "nigguh",
+    "nigguhs",
+    "niggur",
+]
