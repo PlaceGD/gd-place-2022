@@ -1,11 +1,22 @@
-import { app } from "./init.js"
+import prompt from "prompt-sync";
 
-import { getFunctions, httpsCallable } from "firebase/functions"
+let input = prompt({ sigint: true });
+
+import { database } from "./init.js";
 
 const username = process.argv[2]
-const colours = process.argv.slice(0, process.argv.length)
 
-colours.map((c) => c.replace("#", "").replace(",", "").trim())
+let colours = input("Enter colours: ")
 
-const functions = getFunctions(app)
-export const placeObject = httpsCallable(functions, "placeObject")
+colours = colours.replaceAll("#", "").replaceAll(", ", " ").replaceAll(",", " ").trim()
+
+let exists = await database.ref(`userName/${username.toLowerCase()}`).get();
+
+if (exists.val() === null) {
+    console.error("username doesnt exist!")
+    throw new Error()
+}
+
+await database.ref(`userName/${username.toLowerCase()}/displayColor`).set(colours)
+
+process.exit()

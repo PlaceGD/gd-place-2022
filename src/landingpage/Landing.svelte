@@ -1,4 +1,5 @@
 <script lang="ts">
+    import * as PIXI from "pixi.js"
     import { Motion } from "svelte-motion"
     import { toast } from "@zerodevx/svelte-toast"
     //import Countup from "svelte-countup"
@@ -20,6 +21,8 @@
 
     let totalPlacedEl
     let totalDeletedEl
+
+    let canvas: HTMLCanvasElement
 
     const countupOptions = {
         duration: 5,
@@ -43,6 +46,39 @@
                 console.error(deleted.error)
             }
         }
+
+        let app = new PIXI.Application({
+            width: canvas.offsetWidth,
+            height: canvas.offsetHeight,
+            resizeTo: canvas,
+            backgroundColor: 0x060606,
+            view: canvas,
+            resolution: 1,
+        })
+
+        let container = new PIXI.Container()
+
+        let gridGraph = new PIXI.Graphics()
+        container.addChild(gridGraph)
+
+        app.stage.addChild(container)
+
+        const drawGrid = () => {
+            for (let x = 0; x <= canvas.width; x += 30) {
+                gridGraph
+                    .lineStyle(1, 0xffffff, 0.03)
+                    .moveTo(x, 0)
+                    .lineTo(x, canvas.height)
+            }
+            for (let y = 0; y <= canvas.height; y += 30) {
+                gridGraph
+                    .lineStyle(1, 0xffffff, 0.03)
+                    .moveTo(0, y)
+                    .lineTo(canvas.width, y)
+            }
+        }
+
+        drawGrid()
     })
 
     let test = 1000000
@@ -107,6 +143,9 @@
             </div>
         </Motion>
     </div>
+
+    <canvas class="canvas" bind:this={canvas} />
+
     <div class="text_container">
         <Motion
             let:motion
@@ -235,6 +274,12 @@
         align-items: center;
         flex-direction: column;
         gap: 50px;
+    }
+
+    .canvas {
+        position: absolute;
+        width: 100%;
+        height: 100%;
     }
 
     .participating_text {
