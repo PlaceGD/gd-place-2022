@@ -1,14 +1,26 @@
+import prompt from "prompt-sync";
+
+let input = prompt({ sigint: true });
+
 import { database } from "./init.js";
 
-const username = process.argv[2]
+let username = process.argv[2]
 
-let user = await database.ref(`/userName/${username.toLowerCase()}`).get();
-
-if (user.val() === null) {
-    console.error("username doesnt exist!")
-    throw new Error()
+if (!username) {
+    username = input("Enter username: ")
 }
 
-await database.ref(`/bannedUsers/${user.val().uid}`).set(true)
+let usernames = username.split(",")
+
+for(let u of usernames) {
+    let user = await database.ref(`/userName/${u.trim().toLowerCase()}`).get();
+
+    if (user.val() === null) {
+        console.error("username doesnt exist!")
+        throw new Error()
+    }
+
+    await database.ref(`/bannedUsers/${user.val().uid}`).set(true)
+}
 
 process.exit()

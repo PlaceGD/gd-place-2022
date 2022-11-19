@@ -34,7 +34,12 @@
         userCount,
     } from "../firebase/database"
     import { canEdit, currentUserData } from "../firebase/auth"
-    import { MAX_ZOOM, MIN_ZOOM, toastErrorTheme } from "../const"
+    import {
+        MAX_ZOOM,
+        MIN_ZOOM,
+        toastErrorTheme,
+        toastSuccessTheme,
+    } from "../const"
     import { onMount } from "svelte"
     import { settings, settings_writable } from "../settings/settings"
     import { getPlacedUsername, SPAWN_POS } from "./nodes"
@@ -480,7 +485,19 @@
                 {#await getUsernameColors(username) then colors}
                     <div class="info_line">
                         <b> Placed by: </b>
+                        <!-- svelte-ignore a11y-click-events-have-key-events -->
                         <div
+                            on:pointerdown={() => {
+                                navigator.clipboard
+                                    .writeText(username)
+                                    .then(() => {
+                                        toast.pop()
+                                        toast.push("Copied", toastSuccessTheme)
+                                    })
+                                    .catch((e) => {
+                                        toast.push(e, toastErrorTheme)
+                                    })
+                            }}
                             class="username_display {colors.length > 1
                                 ? 'username_gradient'
                                 : ''}"
