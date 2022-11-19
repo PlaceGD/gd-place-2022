@@ -268,7 +268,7 @@ export const beforecreated = beforeUserCreated((event) => {
     if (user?.email) {
         let domain = user.email.split("@")[1].replace("@", "")
 
-        if (ALLOWED_EMAIL_DOMAINS.includes(domain)) {
+        if (!ALLOWED_EMAIL_DOMAINS.includes(domain)) {
             throw new functions.https.HttpsError(
                 "invalid-argument",
                 "Invalid email"

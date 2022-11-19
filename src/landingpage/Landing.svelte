@@ -29,6 +29,13 @@
         useEasing: true,
     }
 
+    const OBJECTS = [1, 2, 3, 4, 5, 6, 7]
+
+    export function randomTexture() {
+        let num = Math.floor(Math.random() * (OBJECTS.length - 1) + 1) // The maximum is exclusive and the minimum is inclusive
+        return PIXI.Texture.from(`/gd/objects/main/${num}.png`)
+    }
+
     const SHADER = `
         precision mediump float;
         uniform vec3 iResolution;
@@ -93,7 +100,7 @@
             
             vec2 swapped = vec2(pRelaviteToVoxel.x, pRelaviteToVoxel.y * -1.);
     
-            vec3 colorA = texture2D(iTexture, swapped).xyz;
+            vec3 colorA = texture2D(uSampler, vTextureCoord);
             // background
             vec3 colorB = vec3(6, 6, 6) / 255.0;
             vec3 color = mix(colorA, colorB, c);
@@ -103,7 +110,8 @@
             vec2 mult = (2.0 * vTextureCoord - 1.0) / (2. * 1.);
             vec4 tex = texture2D(iTexture, mult);
             
-            gl_FragColor = tex;
+            gl_FragColor = vec4(color, 1.0);
+            //gl_FragColor = tex;
             //gl_FragColor = vec4(color, 1.0);
             //gl_FragColor = texture2D(iTexture, swapped);
         }`
@@ -141,40 +149,42 @@
             resolution: 1,
         })
 
+        let sprites = []
+
         let container = new PIXI.Container()
 
-        // let sprite = new PIXI.Sprite(PIXI.Texture.from("/obama.jpg"))
+        // let testshader = new PIXI.Filter(undefined, SHADER, uniforms)
 
-        // sprite.position.set(canvas.width / 2, 400)
-
-        // sprite.scale.set(0.15, 0.15)
-
-        let testshader = new PIXI.Filter(undefined, SHADER, uniforms)
-
-        // const testshader = new PIXI.Shader(new PIXI.Program(null, SHADER), {
-        //     resolution: {
-        //         type: "v3i",
-        //         value: [0, 0, 0],
-        //     },
-        //     time: 0,
-        // })
+        // // const testshader = new PIXI.Shader(new PIXI.Program(null, SHADER), {
+        // //     resolution: {
+        // //         type: "v3i",
+        // //         value: [0, 0, 0],
+        // //     },
+        // //     time: 0,
+        // // })
 
         // container.addChild(sprite)
 
-        // container.pivot.set(1, 1)
-        // container.rotation = 1
+        // // container.pivot.set(1, 1)
+        // // container.rotation = 1
 
         let gridGraph = new PIXI.Graphics()
 
         app.stage.addChild(container)
-        app.stage.addChild(gridGraph)
+        container.addChild(gridGraph)
 
-        container.filters = [testshader]
-        container.filterArea = app.screen
+        // container.filters = [testshader]
+        // container.filterArea = app.screen
 
         app.ticker.add((delta) => {
-            testshader.uniforms.iTime += 0.01 * delta
+            //testshader.uniforms.iTime += 0.01 * delta
         })
+
+        const drawRhoumbus = () => {
+            for (let x = 0; x <= canvas.width / 30; x++) {
+                for (let y = 0; y <= canvas.width / 30; y++) {}
+            }
+        }
 
         const drawGrid = () => {
             for (let x = 0; x <= canvas.width; x += 30) {
@@ -182,12 +192,16 @@
                     .lineStyle(1, 0x060606, 0.5)
                     .moveTo(x, 0)
                     .lineTo(x, canvas.height)
+
+                sprites.push(new PIXI.Sprite(randomTexture()))
             }
             for (let y = 0; y <= canvas.height; y += 30) {
                 gridGraph
                     .lineStyle(1, 0x060606, 0.5)
                     .moveTo(0, y)
                     .lineTo(canvas.width, y)
+
+                sprites.push(new PIXI.Sprite(randomTexture()))
             }
         }
 
