@@ -6,6 +6,7 @@
   "main": "init.js",
   "scripts": {
     "color": "node nameColour.js",
+    "ban": "node ban.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

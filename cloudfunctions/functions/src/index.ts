@@ -52,14 +52,25 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     let chunkY = Math.floor(parseFloat(props[2]) / CHUNK_SIZE.y)
 
     // get the stuff
-    let [obj_limit, obj_count, { eventStart, placeTimer: timer }, userData] = (
+    let [
+        obj_limit,
+        obj_count,
+        { eventStart, placeTimer: timer },
+        userData,
+        banned,
+    ] = (
         await Promise.all([
             db.ref("chunkObjectLimit").get(),
             db.ref(`objectCount/${chunkX},${chunkY}`).get(),
             db.ref("editorState").get(),
             db.ref(`/userData/${uid}`).get(),
+            db.ref(`/bannedUsers/${uid}`).get(),
         ])
     ).map((a) => a.val())
+
+    if (banned === true) {
+        throw new functions.https.HttpsError("permission-denied", "User banned")
+    }
 
     if (eventStart > Date.now() / 1000 && !userData?.admin) {
         throw new functions.https.HttpsError(
@@ -124,12 +135,17 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
 
     // make sure the event has started before deleting
 
-    let [{ eventStart, deleteTimer: timer }, userData] = (
+    let [{ eventStart, deleteTimer: timer }, userData, banned] = (
         await Promise.all([
             db.ref("editorState").get(),
             db.ref(`/userData/${uid}`).get(),
+            db.ref(`/bannedUsers/${uid}`).get(),
         ])
     ).map((a) => a.val())
+
+    if (banned === true) {
+        throw new functions.https.HttpsError("permission-denied", "User banned")
+    }
 
     if (eventStart > Date.now() / 1000 && !userData?.admin) {
         throw new functions.https.HttpsError(
