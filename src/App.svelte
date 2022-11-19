@@ -32,8 +32,7 @@
 
 <SvelteToast options={{ reversed: true, intro: { y: 192 } }} />
 
-<!-- <Landing />
- -->
+<!-- <Landing /> -->
 
 {#if isEmailVerification}
     <div class="email">
