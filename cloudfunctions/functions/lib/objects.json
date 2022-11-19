@@ -155,8 +155,6 @@
     { "id": 1582, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "utilities" },
     { "id": 1519, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "utilities" },
     { "id": 1618, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "utilities" },
-    { "id": 920, "offset_x": 0, "offset_y": 17, "tintable": true, "solid": false, "category": "utilities" },
-    { "id": 923, "offset_x": 0, "offset_y": 12.5, "tintable": true, "solid": false, "category": "utilities" },
     { "id": 503, "offset_x": 0, "offset_y": -5, "tintable": true, "solid": false, "category": "grounddeco" },
     { "id": 505, "offset_x": 0, "offset_y": 0, "tintable": true, "solid": false, "category": "grounddeco" },
     { "id": 504, "offset_x": 5, "offset_y": -5, "tintable": true, "solid": false, "category": "grounddeco" },

@@ -7,7 +7,8 @@
   "scripts": {
     "color": "node nameColour.js",
     "ban": "node ban.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "setTimer": "node setTimer.js"
   },
   "author": "",
   "license": "ISC",

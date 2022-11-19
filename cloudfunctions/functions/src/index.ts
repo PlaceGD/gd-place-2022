@@ -258,6 +258,11 @@ export const initUserWithUsername = functions.https.onCall(
         return user
     }
 )
+// fire objects (disabled temporarily)
+/*
+ { "id": 920, "offset_x": 0,    "offset_y": 17,     "tintable": true, "solid": false, "category": "utilities" },
+    { "id": 923, "offset_x": 0,    "offset_y": 12.5,     "tintable": true, "solid": false, "category": "utilities" },
+*/
 
 function validateObject(props: string[]) {
     const [
