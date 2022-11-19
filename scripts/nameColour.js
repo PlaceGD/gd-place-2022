@@ -5,7 +5,6 @@ let input = prompt({ sigint: true });
 import { database } from "./init.js";
 
 const username = process.argv[2]
-
 let colours = input("Enter colours: ")
 
 colours = colours.replaceAll("#", "").replaceAll(", ", " ").replaceAll(",", " ").trim()

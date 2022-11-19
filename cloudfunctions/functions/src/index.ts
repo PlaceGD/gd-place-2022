@@ -1,10 +1,11 @@
 import * as functions from "firebase-functions"
 import * as admin from "firebase-admin"
 import { initializeApp } from "firebase-admin/app"
+import { beforeUserCreated } from "firebase-functions/v2/identity"
 
 import objects from "./objects.json"
 
-import { BAD_WORDS } from "./badwords"
+import { ALLOWED_EMAIL_DOMAINS, BAD_WORDS } from "./badwords"
 
 export * from "./gd"
 
@@ -258,6 +259,24 @@ export const initUserWithUsername = functions.https.onCall(
         return user
     }
 )
+
+// blocking function
+// should block any emails that dont have an allowed domain
+export const beforecreated = beforeUserCreated((event) => {
+    const user = event.data
+
+    if (user?.email) {
+        let domain = user.email.split("@")[1].replace("@", "")
+
+        if (ALLOWED_EMAIL_DOMAINS.includes(domain)) {
+            throw new functions.https.HttpsError(
+                "invalid-argument",
+                "Invalid email"
+            )
+        }
+    }
+})
+
 // fire objects (disabled temporarily)
 /*
  { "id": 920, "offset_x": 0,    "offset_y": 17,     "tintable": true, "solid": false, "category": "utilities" },
