@@ -2,6 +2,7 @@
     import { Howl } from "howler"
     import { pinch } from "svelte-gestures"
     import { toast } from "@zerodevx/svelte-toast"
+    import { Motion } from "svelte-motion"
 
     import { vec } from "../utils/vector"
     import {
@@ -12,6 +13,7 @@
         pixiCanvas,
         EditorMenu,
         pixiAppStore,
+        obamaAnimEnded,
         selectedObject,
         toGradient,
     } from "./app"
@@ -50,6 +52,7 @@
         eventEnded,
     } from "../countdown/countdown"
     import { clamp } from "../utils/math"
+    import WarpSpeed from "../warpspeed.js"
 
     $: Object.keys(settings).forEach((key) => {
         settings[key] = $settings_writable[key]
@@ -88,6 +91,8 @@
         }
     }
 
+    let starfieldCanvas: HTMLCanvasElement
+
     onMount(() => {
         let data = new URLSearchParams(window.location.search)
 
@@ -114,6 +119,20 @@
 
         pixiAppStore.set(new EditorApp($pixiCanvas, editorPosition))
         switchMenu(EditorMenu.Build)
+
+        const x = new WarpSpeed("starfield_canvas", {
+            speed: 1,
+            speedAdjFactor: 0.03,
+            density: 5,
+            shape: "circle",
+            warpEffect: true,
+            warpEffectLength: 8,
+            depthFade: true,
+            starSize: 5,
+            backgroundColor: "#000000",
+            starColor: "#FFFFFF",
+        })
+        console.log(x)
     })
 
     enum EditTab {
@@ -216,11 +235,11 @@
 
 <svelte:window
     on:pointerup={(e) => {
-        if ($timeleft == 0) return
+        if ($timeleft == 0 && !$eventEnded) return
         pixiApp.dragging = null
     }}
     on:pointermove={(e) => {
-        if ($timeleft == 0) return
+        if ($timeleft == 0 && !$eventEnded) return
         pixiApp.mousePos = vec(e.pageX, e.pageY)
         if (
             pixiApp.dragging &&
@@ -280,6 +299,19 @@
 />
 
 <div class="editor">
+    <Motion
+        let:motion
+        initial={{ opacity: 0 }}
+        animate={$obamaAnimEnded ? { opacity: 1 } : {}}
+        transition={{ ease: "easeInOut", duration: 2 }}
+    >
+        <canvas
+            class="starfield"
+            id="starfield_canvas"
+            bind:this={starfieldCanvas}
+            use:motion
+        />
+    </Motion>
     <canvas
         class="pixi_canvas"
         bind:this={$pixiCanvas}
@@ -291,7 +323,7 @@
             }
         }}
         on:wheel={(e) => {
-            if ($timeleft == 0) return
+            if ($timeleft == 0 && !$eventEnded) return
             e.preventDefault()
             // if (e.ctrlKey) {
             let wm = pixiApp.editorNode.toWorld(
@@ -320,7 +352,7 @@
         }}
         use:pinch
         on:pinch={({ detail }) => {
-            if ($timeleft == 0) return
+            if ($timeleft == 0 && !$eventEnded) return
             pixiApp.dragging = null
             let prevZoom = pixiApp.editorNode.zoom()
 
@@ -350,12 +382,12 @@
             storePosState(pixiApp)
         }}
         on:pinchup={() => {
-            if ($timeleft == 0) return
+            if ($timeleft == 0 && !$eventEnded) return
             pixiApp.pinching = null
         }}
         on:pointerup={(e) => {
-            if ($timeleft == 0) return
-            if ($countingDown) return
+            if ($timeleft == 0 && !$eventEnded) return
+            if ($countingDown && !$eventEnded) return
 
             pixiApp.pinching = null
             pixiApp.mousePos = vec(e.pageX, e.pageY)
@@ -437,7 +469,7 @@
             </div>
         </div>
     {/if}
-    {#if $timeleft != 0}
+    {#if $timeleft != 0 && !$eventEnded}
         <div class="playbutton">
             <!-- svelte-ignore a11y-click-events-have-key-events -->
             <img
@@ -1273,6 +1305,12 @@
 </div>
 
 <style>
+    .starfield {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+    }
+
     :root {
         --menu-height: 300px;
         --font-small: 24px;
@@ -1479,7 +1517,7 @@
         align-items: center;
         position: fixed;
     }
-    .editor > canvas {
+    .editor > .pixi_canvas {
         position: fixed;
         width: 100%;
         height: 100%;

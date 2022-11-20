@@ -7,7 +7,6 @@
   "scripts": {
     "finish": "node eventFinished.js",
     "history": "node countHistoryAndSave.js",
-    
     "stream": "node updateStream.js",
     "color": "node nameColour.js",
     "ban": "node ban.js",
@@ -18,8 +17,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/p5": "^1.4.3",
     "firebase": "^9.14.0",
     "firebase-admin": "^11.2.1",
+    "p5": "^1.5.0",
     "prompt-sync": "^4.2.0"
   }
 }

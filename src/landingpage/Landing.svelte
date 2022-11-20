@@ -11,6 +11,7 @@
     import Editor from "../editor/Editor.svelte"
     import { streamLink } from "../firebase/database"
     import { database } from "../firebase/init"
+    import { obamaAnimEnded } from "../editor/app"
 
     const variants = {
         editorHeight: {
@@ -28,12 +29,16 @@
     let totalPlaced = 0
     let totalDeleted = 0
 
-    onValue(ref(database, "totalPlaced"), (snapshot) => {
-        totalPlaced = snapshot.val()
+    get(ref(database, "totalPlaced")).then((val) => {
+        console.log(totalPlaced)
+
+        totalPlaced = val.val()
     })
 
-    onValue(ref(database, "totalDeleted"), (snapshot) => {
-        totalDeleted = snapshot.val()
+    get(ref(database, "totalDeleted")).then((val) => {
+        console.log(totalDeleted)
+
+        totalDeleted = val.val()
     })
 
     let canvas: HTMLCanvasElement
@@ -229,7 +234,7 @@
     })
 
     import "../blobz.min.css"
-    import { onValue, ref } from "firebase/database"
+    import { get, onValue, ref } from "firebase/database"
 </script>
 
 <div class="background">

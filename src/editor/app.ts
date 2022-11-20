@@ -58,6 +58,8 @@ export let pixiCanvas: Writable<HTMLCanvasElement | null> = writable(null)
 export let pixiApp: EditorApp
 export let pixiAppStore: Writable<EditorApp | null> = writable(null)
 
+export let obamaAnimEnded = writable(false)
+
 pixiAppStore.subscribe((app) => {
     if (app) pixiApp = app
 })
@@ -122,6 +124,7 @@ export class EditorApp {
             backgroundColor: 0x000000,
             view: canvas,
             resolution: 1,
+            backgroundAlpha: 0,
         })
 
         this.app.stage = new PIXI_LAYERS.Stage()
@@ -229,7 +232,7 @@ export class EditorApp {
                     const dd = Math.min((d - 2000) / 2000, 1)
                     const eased = easeOutExpo(dd)
                     obama.alpha = eased
-                    obama.scale.set(0.15 - 0.05 * eased)
+                    obama.scale.set(0.0 + 0.15 * eased)
                 }
 
                 // text 1: "Thank you for your objects."
@@ -277,7 +280,7 @@ export class EditorApp {
                     const dd = Math.min((d - 18000) / 1000, 1)
                     const eased = easeInExpo(dd)
                     obama.alpha = 1 - eased
-                    obama.scale.set(0.1 - 0.1 * eased)
+                    obama.scale.set(0.15 + 0.2 * eased)
                 }
 
                 return
@@ -409,21 +412,7 @@ export class EditorApp {
                 child.visible = false
             })
             this.editorNode.obamaEndingStart = Date.now()
-
-            const new_obama = new PIXI.Sprite(
-                PIXI.Texture.from("/obama_final_form.png")
-            )
-            new_obama.anchor.set(0.5)
-            new_obama.position.set(
-                this.app.screen.width / 2,
-                this.app.screen.height / 2
-            )
-            new_obama.scale.set(1)
-            new_obama.alpha = 0
-
-            this.app.stage.addChild(new_obama)
-            new_obama.blendMode = PIXI.BLEND_MODES.ADD
-            new_obama.name = "obama"
+            obamaAnimEnded.set(true)
 
             const text = new PIXI.Text("", {
                 fontFamily: ["Cabin", "sans-serif"],
@@ -441,6 +430,21 @@ export class EditorApp {
             text.name = "obama_text"
 
             this.app.stage.addChild(text)
+
+            const new_obama = new PIXI.Sprite(
+                PIXI.Texture.from("/obama_final_form.png")
+            )
+            new_obama.anchor.set(0.5)
+            new_obama.position.set(
+                this.app.screen.width / 2,
+                this.app.screen.height / 2
+            )
+            new_obama.scale.set(1)
+            new_obama.alpha = 0
+
+            this.app.stage.addChild(new_obama)
+            new_obama.blendMode = PIXI.BLEND_MODES.ADD
+            new_obama.name = "obama"
         }, 31000)
     }
 }

@@ -61,11 +61,10 @@ onValue(ref(database, "userCount"), (snapshot) => {
     userCount.set(snapshot.val())
 })
 
-export let eventEnd = Date.now() / 1000 + 40
-// export let eventEnd = null
-// onValue(ref(database, "editorState/eventEnd"), (snapshot) => {
-//     eventEnd = snapshot.val()
-// })
+export let eventEnd = null
+onValue(ref(database, "editorState/eventEnd"), (snapshot) => {
+    eventEnd = snapshot.val()
+})
 
 let clockSound = new Howl({
     src: ["tick.ogg"],

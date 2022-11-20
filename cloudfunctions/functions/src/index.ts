@@ -5,7 +5,7 @@ import { beforeUserCreated } from "firebase-functions/v2/identity"
 
 import objects from "./objects.json"
 
-import {BAD_WORDS } from "./badwords"
+import { BAD_WORDS } from "./badwords"
 
 export * from "./gd"
 
@@ -56,7 +56,7 @@ export const placeObject = functions.https.onCall(async (data, request) => {
     let [
         obj_limit,
         obj_count,
-        { eventStart, placeTimer: timer },
+        { eventStart, placeTimer: timer, canEdit },
         userData,
         banned,
     ] = (
@@ -68,6 +68,13 @@ export const placeObject = functions.https.onCall(async (data, request) => {
             db.ref(`/bannedUsers/${uid}`).get(),
         ])
     ).map((a) => a.val())
+
+    if (canEdit === false) {
+        throw new functions.https.HttpsError(
+            "permission-denied",
+            "Event finished"
+        )
+    }
 
     if (banned === true) {
         throw new functions.https.HttpsError("permission-denied", "User banned")
@@ -136,13 +143,20 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
 
     // make sure the event has started before deleting
 
-    let [{ eventStart, deleteTimer: timer }, userData, banned] = (
+    let [{ eventStart, deleteTimer: timer, canEdit }, userData, banned] = (
         await Promise.all([
             db.ref("editorState").get(),
             db.ref(`/userData/${uid}`).get(),
             db.ref(`/bannedUsers/${uid}`).get(),
         ])
     ).map((a) => a.val())
+
+    if (canEdit === false) {
+        throw new functions.https.HttpsError(
+            "permission-denied",
+            "Event finished"
+        )
+    }
 
     if (banned === true) {
         throw new functions.https.HttpsError("permission-denied", "User banned")
@@ -199,6 +213,11 @@ export const deleteObject = functions.https.onCall(async (data, request) => {
 
 export const initUserWithUsername = functions.https.onCall(
     async (data, request) => {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "The event is nearly over so to avoid an influx of malicious users, all account creation has been disabled."
+        )
+
         if (!request.auth) {
             throw new functions.https.HttpsError(
                 "unauthenticated",
@@ -263,24 +282,33 @@ export const initUserWithUsername = functions.https.onCall(
 // blocking function
 // should block any emails that dont have an allowed domain
 export const beforecreated = beforeUserCreated((event) => {
-    const user = event.data
-
-    if (user?.email) {
-        throw new functions.https.HttpsError(
-            "invalid-argument",
-            "Due to malicious users, email sign up is disabled. Please use a different sign-in method."
-        )
-
-        // let domain = user.email.split("@")[1].replace("@", "")
-
-        // if (!ALLOWED_EMAIL_DOMAINS.includes(domain)) {
-        //     throw new functions.https.HttpsError(
-        //         "invalid-argument",
-        //         "Invalid email"
-        //     )
-        // }
-    }
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "The event is nearly over so to avoid an influx of malicious users, all account creation has been disabled."
+    )
 })
+
+// // blocking function
+// // should block any emails that dont have an allowed domain
+// export const beforecreated = beforeUserCreated((event) => {
+//     const user = event.data
+
+//     if (user?.email) {
+//         throw new functions.https.HttpsError(
+//             "invalid-argument",
+//             "Due to malicious users, email sign up is disabled. Please use a different sign-in method."
+//         )
+
+//         // let domain = user.email.split("@")[1].replace("@", "")
+
+//         // if (!ALLOWED_EMAIL_DOMAINS.includes(domain)) {
+//         //     throw new functions.https.HttpsError(
+//         //         "invalid-argument",
+//         //         "Invalid email"
+//         //     )
+//         // }
+//     }
+// })
 
 // fire objects (disabled temporarily)
 /*
