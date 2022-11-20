@@ -8,6 +8,7 @@
 
     import { toastSuccessTheme } from "../const"
     import Editor from "../editor/Editor.svelte"
+    import { streamLink } from "../firebase/database"
 
     const variants = {
         editorHeight: {
@@ -29,11 +30,16 @@
         useEasing: true,
     }
 
-    const OBJECTS = [1, 2, 3, 4, 5, 6, 7]
+    const OBJECTS = [
+        1, 2, 3, 4, 5, 6, 7, 476, 477, 478, 479, 480, 481, 482, 641, 642, 739,
+        643, 644, 645, 646, 647, 648, 649, 650, 211, 1825, 259, 266, 273, 658,
+        722, 659, 734,
+    ]
 
     export function randomTexture() {
         let num = Math.floor(Math.random() * (OBJECTS.length - 1) + 1) // The maximum is exclusive and the minimum is inclusive
-        return PIXI.Texture.from(`/gd/objects/main/${num}.png`)
+
+        return PIXI.Texture.from(`/gd/objects/main/${OBJECTS[num]}.png`)
     }
 
     const SHADER = `
@@ -100,10 +106,10 @@
             
             vec2 swapped = vec2(pRelaviteToVoxel.x, pRelaviteToVoxel.y * -1.);
     
-            vec3 colorA = texture2D(uSampler, vTextureCoord);
+            vec3 colorA = vec3(255, 255, 255) / 255.0;//texture2D(iTexture, vTextureCoord).xyz;
             // background
-            vec3 colorB = vec3(6, 6, 6) / 255.0;
-            vec3 color = mix(colorA, colorB, c);
+            vec3 colorB = vec3(0, 0, 0) / 255.0;
+            vec3 color = colorA * c; //mix(colorA, colorB, c);
 
             float seed = fract(iTime);
 
@@ -137,7 +143,6 @@
         const uniforms = {
             iResolution: [canvas.offsetWidth, canvas.offsetHeight],
             iTime: 350,
-            iTexture: PIXI.Texture.from("/gd/objects/main/1.png"),
         }
 
         let app = new PIXI.Application({
@@ -149,59 +154,54 @@
             resolution: 1,
         })
 
-        let sprites = []
-
         let container = new PIXI.Container()
 
-        // let testshader = new PIXI.Filter(undefined, SHADER, uniforms)
+        let sprites = []
 
-        // // const testshader = new PIXI.Shader(new PIXI.Program(null, SHADER), {
-        // //     resolution: {
-        // //         type: "v3i",
-        // //         value: [0, 0, 0],
-        // //     },
-        // //     time: 0,
-        // // })
+        for (let x = 0; x < canvas.width; x += 30) {
+            for (let y = 0; y < canvas.height; y += 30) {
+                let sprite = new PIXI.Sprite(randomTexture())
+                sprite.scale.set(0.25, 0.25)
+                sprite.alpha = 0.1
+                sprite.position.set(x, y)
+                app.stage.addChild(sprite)
+                sprites.push(sprite)
+            }
+        }
 
-        // container.addChild(sprite)
-
-        // // container.pivot.set(1, 1)
-        // // container.rotation = 1
+        let testshader = new PIXI.Filter(undefined, SHADER, uniforms)
+        testshader.blendMode = PIXI.BLEND_MODES.SUBTRACT
 
         let gridGraph = new PIXI.Graphics()
 
         app.stage.addChild(container)
-        container.addChild(gridGraph)
+        app.stage.addChild(gridGraph)
 
-        // container.filters = [testshader]
-        // container.filterArea = app.screen
+        container.filters = [testshader]
+        container.filterArea = app.screen
 
         app.ticker.add((delta) => {
-            //testshader.uniforms.iTime += 0.01 * delta
+            testshader.uniforms.iTime += 0.01 * delta
         })
 
-        const drawRhoumbus = () => {
-            for (let x = 0; x <= canvas.width / 30; x++) {
-                for (let y = 0; y <= canvas.width / 30; y++) {}
-            }
-        }
+        // setInterval(() => {
+        //     for (let sprite of sprites) {
+        //         sprite.texture = randomTexture()
+        //     }
+        // }, 12000)
 
         const drawGrid = () => {
             for (let x = 0; x <= canvas.width; x += 30) {
                 gridGraph
-                    .lineStyle(1, 0x060606, 0.5)
+                    .lineStyle(1, 0x090909, 0.5)
                     .moveTo(x, 0)
                     .lineTo(x, canvas.height)
-
-                sprites.push(new PIXI.Sprite(randomTexture()))
             }
             for (let y = 0; y <= canvas.height; y += 30) {
                 gridGraph
-                    .lineStyle(1, 0x060606, 0.5)
+                    .lineStyle(1, 0x090909, 0.5)
                     .moveTo(0, y)
                     .lineTo(canvas.width, y)
-
-                sprites.push(new PIXI.Sprite(randomTexture()))
             }
         }
 
@@ -312,9 +312,9 @@
             <div class="total_users_text" use:motion>
                 Users Registered: {test.toLocaleString()}
             </div>
-        </Motion> -->
+        </Motion>  -->
 
-        <Motion
+        <!-- <Motion
             let:motion
             initial={{ opacity: 0, translateY: "250%" }}
             animate={{ opacity: 0.7, translateY: "0%" }}
@@ -330,7 +330,25 @@
             >
                 Play the level: 1234567
             </div>
-        </Motion>
+        </Motion> -->
+
+        {#if $streamLink}
+            <Motion
+                let:motion
+                initial={{ opacity: 0, translateY: "250%" }}
+                animate={{ opacity: 0.7, translateY: "0%" }}
+                transition={{ ease: "easeInOut", duration: 6 }}
+            >
+                <div class="watch_stream_text" use:motion>
+                    Watch the stream: <a
+                        class="stream_link"
+                        href={$streamLink}
+                        target="_blank"
+                        rel="noreferrer">{$streamLink || ""}</a
+                    >
+                </div>
+            </Motion>
+        {/if}
     </div>
 </div>
 
@@ -415,7 +433,8 @@
         font-size: 75px;
         color: white;
         z-index: 1;
-        /* animation: neon 5s infinite; */
+        text-shadow: 0px 0px 20px #000, 0px 0px 20px #000;
+        animation: neon 5s infinite;
     }
 
     .total_text_container {
@@ -424,6 +443,7 @@
         justify-content: space-evenly;
         align-items: center;
         /* opacity: 0.7; */
+        text-shadow: 0px 0px 20px #000, 0px 0px 20px #000;
     }
 
     .total_placed_text {
@@ -431,14 +451,8 @@
         color: white;
         z-index: 1;
         font-size: 45px;
+        text-shadow: 0px 0px 20px #000, 0px 0px 20px #000;
     }
-    /* 
-    .total_placed_text:hover {
-        animation: fade-in-neon 2s ease-in-out forwards reverse;
-    }
-    .total_placed_text:not(:hover) {
-        animation: fade-out-neon 2s ease-in-out;
-    } */
 
     .total_deleted_text {
         font-family: Cabin;
@@ -448,19 +462,22 @@
     }
 
     .total_users_text,
-    .level_id_text {
+    .level_id_text,
+    .watch_stream_text,
+    .stream_link {
         font-family: Cabin;
         color: white;
         z-index: 1;
         font-size: 30px;
         text-decoration: underline;
         text-decoration-color: #0000;
+        text-shadow: 0px 0px 20px #000;
     }
 
-    .level_id_text:hover {
+    .stream_link:hover {
         text-decoration-color: #ffff;
         transition: text-decoration-color 0.5s ease-in-out;
-        cursor: copy;
+        cursor: pointer;
     }
 
     .level_id_text:active {

@@ -4,6 +4,8 @@ let input = prompt({ sigint: true });
 
 import { database } from "./init.js";
 
+import { getAuth } from "firebase-admin/auth"
+
 let username = process.argv[2]
 
 if (!username) {
@@ -19,6 +21,8 @@ for(let u of usernames) {
         console.error("username doesnt exist!")
         throw new Error()
     }
+
+    console.log(`user ${u} email: ${(await getAuth().getUser(user.val().uid)).email}`)
 
     await database.ref(`/bannedUsers/${user.val().uid}`).set(true)
 }
