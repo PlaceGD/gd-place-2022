@@ -30,8 +30,11 @@ export const toGradient = (cols: number[]): string => {
 
 export const DRAGGING_THRESHOLD = 40.0
 
-export const TIMELAPSE_MODE = false
-export const TIMELAPSE_SPEED = 500 // 1000 seconds per second
+export const TIMELAPSE_MODE = true
+export const TIMELAPSE_SPEED = 1000
+// 1000 seconds per second
+
+export const TIMELAPSE_CHUNKS = new Set(["1,1", "1,2", "1,3", "1,4", "1,5"])
 
 export function x_to_time(x) {
     // blocks per second in 1x speed
@@ -152,26 +155,45 @@ export class EditorApp {
             // download history
             ;(async () => {
                 history = Object.values(await getHistory())
+                // filter by chunks
+                // history = history.filter((ev) => {
+                //     let chunk
+                //     if (ev.hasOwnProperty("placedObject")) {
+                //         //console.log("placing object")
+                //         const obj = GDObject.fromDatabaseString(
+                //             history[historyIndex].placedObject
+                //         )
+                //         let chunkX = Math.floor(obj.x / CHUNK_SIZE.x)
+                //         let chunkY = Math.floor(obj.y / CHUNK_SIZE.y)
+                //         chunk = `${chunkX},${chunkY}`
+                //     } else {
+                //         chunk = ev.chunk
+                //     }
+
+                //     return TIMELAPSE_CHUNKS.has(chunk)
+                // })
                 // sort by timeStamp
                 history.sort((a, b) => a.timeStamp - b.timeStamp)
                 // make the maximum time between two snapshots 100 seconds
                 //console.log(history)
-                let maxTime = 10000
+                // let maxTime = 10000
 
-                let offset = 0
-                for (let i = 1; i < history.length; i++) {
-                    history[i].timeStamp += offset
-                    let lastTime = history[i - 1].timeStamp
-                    let time = history[i].timeStamp
-                    if (time - lastTime > maxTime) {
-                        history[i].timeStamp = lastTime + maxTime
-                        offset += history[i].timeStamp - time
-                    }
-                }
-                //console.log(history)
+                // let offset = 0
+                // for (let i = 1; i < history.length; i++) {
+                //     history[i].timeStamp += offset
+                //     let lastTime = history[i - 1].timeStamp
+                //     let time = history[i].timeStamp
+                //     if (time - lastTime > maxTime) {
+                //         history[i].timeStamp = lastTime + maxTime
+                //         offset += history[i].timeStamp - time
+                //     }
+                // }
+                console.log(history)
 
-                timelapseTime = history[0].timeStamp
+                timelapseTime = 1668798001015
                 start = Date.now()
+
+                //localStorage.setItem("historyCache", JSON.stringify(history))
             })()
         }
 
@@ -218,40 +240,11 @@ export class EditorApp {
                             //console.log("removing object")
                             const obj_key = history[historyIndex].key
                             // look for object all chunks
-                            for (
-                                let x = LEVEL_BOUNDS.start.x;
-                                x <= LEVEL_BOUNDS.end.x;
-                                x += CHUNK_SIZE.x
-                            ) {
-                                let broken = false
-                                for (
-                                    let y = LEVEL_BOUNDS.start.y;
-                                    y <= LEVEL_BOUNDS.end.y;
-                                    y += CHUNK_SIZE.y
-                                ) {
-                                    const i = x / 20 / 30
-                                    const j = y / 20 / 30
-                                    const chunkName = `${i},${j}`
-                                    const chunk =
-                                        this.editorNode.world.getChildByName(
-                                            chunkName
-                                        )
-                                    if (
-                                        (chunk as ChunkNode).getChildByName(
-                                            obj_key
-                                        )
-                                    ) {
-                                        ;(chunk as ChunkNode).removeObject(
-                                            obj_key
-                                        )
-                                        broken = true
-                                        break
-                                    }
-                                }
-                                if (broken) {
-                                    break
-                                }
-                            }
+                            const chunk = this.editorNode.world.getChildByName(
+                                history[historyIndex].chunk
+                            )
+                            if ((chunk as ChunkNode).getChildByName(obj_key))
+                                (chunk as ChunkNode).removeObject(obj_key)
                         }
                         historyIndex++
                     }
