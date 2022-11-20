@@ -5,6 +5,9 @@
   "description": "",
   "main": "init.js",
   "scripts": {
+    "finish": "node eventFinished.js",
+    "history": "node countHistoryAndSave.js",
+    
     "stream": "node updateStream.js",
     "color": "node nameColour.js",
     "ban": "node ban.js",

@@ -5,10 +5,12 @@
     //import Countup from "svelte-countup"
     import { CountUp } from "countup.js"
     import { onMount } from "svelte"
+    import debounce from "lodash.debounce"
 
     import { toastSuccessTheme } from "../const"
     import Editor from "../editor/Editor.svelte"
     import { streamLink } from "../firebase/database"
+    import { database } from "../firebase/init"
 
     const variants = {
         editorHeight: {
@@ -22,6 +24,17 @@
 
     let totalPlacedEl
     let totalDeletedEl
+
+    let totalPlaced = 0
+    let totalDeleted = 0
+
+    onValue(ref(database, "totalPlaced"), (snapshot) => {
+        totalPlaced = snapshot.val()
+    })
+
+    onValue(ref(database, "totalDeleted"), (snapshot) => {
+        totalDeleted = snapshot.val()
+    })
 
     let canvas: HTMLCanvasElement
 
@@ -122,24 +135,29 @@
             //gl_FragColor = texture2D(iTexture, swapped);
         }`
 
-    onMount(() => {
-        if (totalDeletedEl && totalPlacedEl) {
-            let placed = new CountUp(totalPlacedEl, test, countupOptions)
-            let deleted = new CountUp(totalDeletedEl, test, countupOptions)
+    $: if (
+        totalPlaced > 0 &&
+        totalDeleted > 0 &&
+        totalDeletedEl &&
+        totalPlacedEl
+    ) {
+        let placed = new CountUp(totalPlacedEl, totalPlaced, countupOptions)
+        let deleted = new CountUp(totalDeletedEl, totalDeleted, countupOptions)
 
-            if (!placed.error) {
-                placed.start()
-            } else {
-                console.error(placed.error)
-            }
-
-            if (!deleted.error) {
-                deleted.start()
-            } else {
-                console.error(deleted.error)
-            }
+        if (!placed.error) {
+            placed.start()
+        } else {
+            console.error(placed.error)
         }
 
+        if (!deleted.error) {
+            deleted.start()
+        } else {
+            console.error(deleted.error)
+        }
+    }
+
+    onMount(() => {
         const uniforms = {
             iResolution: [canvas.offsetWidth, canvas.offsetHeight],
             iTime: 350,
@@ -169,26 +187,20 @@
             }
         }
 
-        let testshader = new PIXI.Filter(undefined, SHADER, uniforms)
-        testshader.blendMode = PIXI.BLEND_MODES.SUBTRACT
+        let shader = new PIXI.Filter(undefined, SHADER, uniforms)
+        shader.blendMode = PIXI.BLEND_MODES.SUBTRACT
 
         let gridGraph = new PIXI.Graphics()
 
         app.stage.addChild(container)
         app.stage.addChild(gridGraph)
 
-        container.filters = [testshader]
+        container.filters = [shader]
         container.filterArea = app.screen
 
         app.ticker.add((delta) => {
-            testshader.uniforms.iTime += 0.01 * delta
+            shader.uniforms.iTime += 0.01 * delta
         })
-
-        // setInterval(() => {
-        //     for (let sprite of sprites) {
-        //         sprite.texture = randomTexture()
-        //     }
-        // }, 12000)
 
         const drawGrid = () => {
             for (let x = 0; x <= canvas.width; x += 30) {
@@ -206,11 +218,18 @@
         }
 
         drawGrid()
+
+        let resizeFn = debounce(() => {
+            gridGraph.clear()
+            drawGrid()
+            container.filterArea = app.screen
+        }, 300)
+
+        canvas.onresize = resizeFn
     })
 
-    let test = 1000000
-
     import "../blobz.min.css"
+    import { onValue, ref } from "firebase/database"
 </script>
 
 <div class="background">
@@ -271,7 +290,14 @@
         </Motion>
     </div>
 
-    <canvas class="canvas" bind:this={canvas} />
+    <Motion
+        let:motion
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ ease: "easeInOut", duration: 3 }}
+    >
+        <canvas class="canvas" bind:this={canvas} use:motion />
+    </Motion>
 
     <div class="text_container">
         <Motion
@@ -285,23 +311,25 @@
             </div>
         </Motion>
 
-        <Motion
-            let:motion
-            initial={{ opacity: 0, translateY: "200%" }}
-            animate={{ opacity: 1, translateY: "0%" }}
-            transition={{ ease: "easeInOut", duration: 4 }}
-        >
-            <div class="total_text_container" use:motion>
-                <div class="total_placed_text">
-                    Objects Placed:
-                    <span bind:this={totalPlacedEl} />
+        {#if totalPlaced > 0 && totalDeleted > 0}
+            <Motion
+                let:motion
+                initial={{ opacity: 0, translateY: "200%" }}
+                animate={{ opacity: 1, translateY: "0%" }}
+                transition={{ ease: "easeInOut", duration: 4 }}
+            >
+                <div class="total_text_container" use:motion>
+                    <div class="total_placed_text">
+                        Objects Placed:
+                        <span bind:this={totalPlacedEl} />
+                    </div>
+                    <div class="total_deleted_text">
+                        Objects Deleted:
+                        <span bind:this={totalDeletedEl} />
+                    </div>
                 </div>
-                <div class="total_deleted_text">
-                    Objects Deleted:
-                    <span bind:this={totalDeletedEl} />
-                </div>
-            </div>
-        </Motion>
+            </Motion>
+        {/if}
 
         <!-- <Motion
             let:motion
@@ -332,7 +360,7 @@
             </div>
         </Motion> -->
 
-        {#if $streamLink}
+        {#if $streamLink && totalPlaced > 0 && totalDeleted > 0}
             <Motion
                 let:motion
                 initial={{ opacity: 0, translateY: "250%" }}
