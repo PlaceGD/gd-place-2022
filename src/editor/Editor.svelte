@@ -32,7 +32,7 @@
         streamLink,
         updateObjectCategory,
         userCount,
-        eventEndWritable,
+        timeleft,
     } from "../firebase/database"
     import { canEdit, currentUserData } from "../firebase/auth"
     import {
@@ -43,7 +43,7 @@
     } from "../const"
     import { onMount } from "svelte"
     import { settings, settings_writable } from "../settings/settings"
-    import { getPlacedUsername, SPAWN_POS } from "./nodes"
+    import { getPlacedUsername, LEVEL_BOUNDS, SPAWN_POS } from "./nodes"
     import {
         countingDown,
         eventStartWritable,
@@ -212,23 +212,15 @@
             menuIndex++ % 3
         ]
     }
-    let timeleft = null
-    $: if ($eventEndWritable != null) {
-        let timeleftInterval = setInterval(() => {
-            timeleft = $eventEndWritable * 1000 - Date.now()
-
-            if (timeleft <= 0) {
-                clearInterval(timeleftInterval)
-            }
-        }, 1000)
-    }
 </script>
 
 <svelte:window
     on:pointerup={(e) => {
+        if ($timeleft == 0) return
         pixiApp.dragging = null
     }}
     on:pointermove={(e) => {
+        if ($timeleft == 0) return
         pixiApp.mousePos = vec(e.pageX, e.pageY)
         if (
             pixiApp.dragging &&
@@ -241,6 +233,7 @@
         }
     }}
     on:keydown={(e) => {
+        if ($timeleft == 0) return
         if ($canEdit) {
             if (e.code == "Digit1") {
                 e.preventDefault()
@@ -298,6 +291,7 @@
             }
         }}
         on:wheel={(e) => {
+            if ($timeleft == 0) return
             e.preventDefault()
             // if (e.ctrlKey) {
             let wm = pixiApp.editorNode.toWorld(
@@ -326,6 +320,7 @@
         }}
         use:pinch
         on:pinch={({ detail }) => {
+            if ($timeleft == 0) return
             pixiApp.dragging = null
             let prevZoom = pixiApp.editorNode.zoom()
 
@@ -355,9 +350,11 @@
             storePosState(pixiApp)
         }}
         on:pinchup={() => {
+            if ($timeleft == 0) return
             pixiApp.pinching = null
         }}
         on:pointerup={(e) => {
+            if ($timeleft == 0) return
             if ($countingDown) return
 
             pixiApp.pinching = null
@@ -428,26 +425,40 @@
         }}
     />
 
-    <div class="playbutton">
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <img
-            src={pixiApp?.playingMusic
-                ? "/gd/editor/GJ_stopMusicBtn_001.png"
-                : "/gd/editor/GJ_playMusicBtn_001.png"}
-            alt="play music"
-            height="75"
-            id="music_button"
-            on:click={() => {
-                if (!pixiApp.playingMusic) {
-                    pixiApp.playMusic()
-                } else {
-                    pixiApp.stopMusic()
-                }
-            }}
-        />
-    </div>
+    {#if $timeleft != null}
+        <div class="end_countdown_container">
+            <div
+                class="end_countdown"
+                style:color={$timeleft < 30000 ? "red" : "white"}
+                style:opacity={$timeleft != 0 ? 1 : 0}
+            >
+                <!-- $eventEndWritable -->
+                {new Date($timeleft).toISOString().substr(11, 8)}
+            </div>
+        </div>
+    {/if}
+    {#if $timeleft != 0}
+        <div class="playbutton">
+            <!-- svelte-ignore a11y-click-events-have-key-events -->
+            <img
+                src={pixiApp?.playingMusic
+                    ? "/gd/editor/GJ_stopMusicBtn_001.png"
+                    : "/gd/editor/GJ_playMusicBtn_001.png"}
+                alt="play music"
+                height="75"
+                id="music_button"
+                on:click={() => {
+                    if (!pixiApp.playingMusic) {
+                        pixiApp.playMusic()
+                    } else {
+                        pixiApp.stopMusic()
+                    }
+                }}
+            />
+        </div>
+    {/if}
 
-    {#if settings.showObjInfo.enabled && $selectedObject != null}
+    {#if settings.showObjInfo.enabled && $selectedObject != null && $timeleft != 0}
         <div class="obj_info">
             <div class="info_line">
                 <b> Object type: </b>
@@ -524,16 +535,7 @@
         </div>
     {/if}
 
-    {#if timeleft != null}
-        <div class="end_countdown_container">
-            <div class="end_countdown">
-                <!-- $eventEndWritable -->
-                {new Date(timeleft).toISOString().substr(11, 8)}
-            </div>
-        </div>
-    {/if}
-
-    {#if $canEdit && $eventStartWritable != null && $countingDown != null && !$countingDown && !settings.hideMenu.enabled && !$eventEnded}
+    {#if $timeleft != 0 && $canEdit && $eventStartWritable != null && $countingDown != null && !$countingDown && !settings.hideMenu.enabled && !$eventEnded}
         <div class="menu">
             <div
                 class="side_panel menu_panel"
@@ -1203,7 +1205,7 @@
                 </button>
             {/if}
         </div>
-    {:else if !settings.hideMenu.enabled && $countingDown != null && $eventStartWritable != null && !$eventEnded}
+    {:else if $timeleft != 0 && !settings.hideMenu.enabled && $countingDown != null && $eventStartWritable != null && !$eventEnded}
         {#if $countingDown}
             {#if $streamLink != null}
                 <div class="livestream_link">
@@ -1814,6 +1816,7 @@
         width: 100%;
         position: absolute;
         top: 0;
+        z-index: 3;
     }
     .end_countdown {
         width: fit-content;
@@ -1828,6 +1831,7 @@
         font-family: Cabin, sans-serif;
         overflow: hidden;
         margin: 12px;
+        transition: opacity 3s;
     }
     .objects_grid_container {
         overflow-x: hidden;
@@ -2218,6 +2222,7 @@
         top: 12px;
         left: 12px;
         cursor: pointer;
+        z-index: 20;
     }
 
     .tab_button::before {

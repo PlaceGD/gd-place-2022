@@ -16,9 +16,10 @@ import { clamp, wrap } from "../utils/math"
 
 import { MAX_ZOOM, MIN_ZOOM, toastErrorTheme } from "../const"
 import { database } from "../firebase/init"
-import { pixiApp, selectedObject } from "./app"
+import { pixiApp, rgbToHexnum, selectedObject } from "./app"
 import { settings } from "../settings/settings"
 import { CountDownNode } from "../countdown/countdown"
+import { Howl } from "howler"
 
 const SONG_LENGTH = 250
 
@@ -225,6 +226,9 @@ export class EditorNode extends PIXI.Container {
     }
 
     unloadOffscreenChunks() {
+        if (this.obamaEndingStart != null) {
+            return
+        }
         let unloaded = 0
 
         for (
@@ -377,12 +381,6 @@ export class EditorNode extends PIXI.Container {
                 .lineTo(LEVEL_BOUNDS.end.x, y)
         }
 
-        let obama = new PIXI.Sprite(PIXI.Texture.from("/obama.jpg"))
-        obama.anchor.set(0.5)
-        obama.position.set(LEVEL_BOUNDS.end.x, LEVEL_BOUNDS.end.y)
-        obama.scale.set(0.01)
-        this.addChild(obama)
-
         this.world = new PIXI.Container()
         this.addChild(this.world)
         this.world.sortableChildren = true
@@ -449,6 +447,16 @@ export class EditorNode extends PIXI.Container {
         groundLine.parentGroup = this.layerGroup
         groundLine.zOrder = 150
 
+        let obama = new PIXI.Sprite(PIXI.Texture.from("/obama.jpg"))
+        obama.anchor.set(0.5)
+        obama.position.set(LEVEL_BOUNDS.end.x, LEVEL_BOUNDS.end.y)
+        obama.scale.set(0.01)
+
+        this.addChild(obama)
+
+        obama.parentGroup = this.layerGroup
+        obama.zOrder = -200
+
         initChunkBehavior(
             this,
             this.world,
@@ -469,6 +477,9 @@ export class EditorNode extends PIXI.Container {
         }, 10000)
 
         app.ticker.add(() => {
+            if (this.obamaEndingStart != null) {
+                return
+            }
             this.cameraPos = this.cameraPos.clamped(
                 LEVEL_BOUNDS.start,
                 LEVEL_BOUNDS.end
@@ -522,12 +533,6 @@ export class EditorNode extends PIXI.Container {
 
             groundLine.position.x = this.cameraPos.x
 
-            obama.rotation += 0.01
-            obama.skew.x += 0.001
-            obama.skew.x += 0.005
-            obama.scale.x = Math.cos(obama.rotation) * 0.1
-            obama.scale.y = Math.sin(obama.rotation) * 0.05
-
             if (this.objectPreviewNode != null) {
                 let box = this.objectPreviewNode.getChildByName(
                     "box"
@@ -550,8 +555,145 @@ export class EditorNode extends PIXI.Container {
             }
 
             this.tooltip.zoom = this.zoomLevel
+
+            function easeInOutQuad(x: number): number {
+                x = clamp(x, 0, 1)
+                return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2
+            }
+
+            function easeOutSine(x: number): number {
+                return Math.sin((x * Math.PI) / 2)
+            }
+
+            function easeInExpo(x: number): number {
+                return x === 0 ? 0 : Math.pow(2, 10 * x - 10)
+            }
+
+            function easeInQuad(x: number): number {
+                return x * x
+            }
+
+            if (this.obamaAnimStart != null) {
+                const d = Date.now() - this.obamaAnimStart
+                this.zoomLevel = -easeOutSine(Math.min(d / 35000, 1)) * 8
+
+                this.cameraPos = LEVEL_BOUNDS.end //.add(vec().mult(easeOutSine(Math.min(d / 35000, 1))))
+
+                obama.rotation = obama.rotation * 0.99
+                obama.skew.x = obama.skew.x * 0.99
+
+                this.ominousSound.volume(Math.min(d / 35000, 1) * 3 + 0.1)
+
+                let obamaSize = 0.15
+                if (d > 8000) {
+                    const dd = (d - 6000) / 20000
+                    const eased = easeInQuad(Math.min(dd, 1))
+                    obamaSize = 0.15 + eased * 0.35
+                    obama.tint = rgbToHexnum([1 - eased, 1, 1])
+                    obama.position = LEVEL_BOUNDS.end.plus(
+                        vec(
+                            150 + (Math.random() * 10 - 5) * eased,
+                            150 + (Math.random() * 10 - 5) * eased
+                        )
+                    )
+                }
+
+                obama.scale.x = (obama.scale.x - obamaSize) * 0.99 + obamaSize
+                obama.scale.y = (obama.scale.y + obamaSize) * 0.99 - obamaSize
+                if (d > 3000) {
+                    obama.zOrder = 1000
+                }
+                if (d > 1000 && d <= 3000) {
+                    const dd = (d - 1000) / 2000
+                    const eased = easeInOutQuad(dd)
+
+                    obama.position.set(
+                        LEVEL_BOUNDS.end.x + 300 * eased,
+                        LEVEL_BOUNDS.end.y + 300 * eased
+                    )
+                }
+                if (d > 3000 && d <= 5000) {
+                    const dd = (d - 3000) / 2000
+                    const eased = easeInOutQuad(dd)
+
+                    obama.position.set(
+                        LEVEL_BOUNDS.end.x + 300 - 150 * eased,
+                        LEVEL_BOUNDS.end.y + 300 - 150 * eased
+                    )
+                }
+
+                if (d > 6000) {
+                    // loop over the top right 2x2 chunks
+                    for (let x = 0; x < 3; x++) {
+                        for (let y = 0; y < 3; y++) {
+                            const i =
+                                Math.floor(LEVEL_BOUNDS.end.x / CHUNK_SIZE.x) -
+                                x
+                            const j =
+                                Math.floor(LEVEL_BOUNDS.end.y / CHUNK_SIZE.y) -
+                                y
+                            const chunk = this.world.getChildByName(
+                                `${i},${j}`
+                            ) as ChunkNode
+                            if (chunk != null)
+                                chunk.children.forEach((child) => {
+                                    const c = child as ObjectNode
+                                    const dist = Math.sqrt(
+                                        (c.obj.x - LEVEL_BOUNDS.end.x - 150) **
+                                            2 +
+                                            (c.obj.y -
+                                                LEVEL_BOUNDS.end.y -
+                                                150) **
+                                                2
+                                    )
+
+                                    const random =
+                                        ((c.obj.x * 102363.271 +
+                                            c.obj.y * 123123.123) %
+                                            2) -
+                                        1
+
+                                    const dd = clamp(
+                                        (d - 6000) / 2000 - dist / 200,
+                                        0,
+                                        1
+                                    )
+                                    const eased = easeInExpo(dd)
+
+                                    const vecToObama = vec(
+                                        LEVEL_BOUNDS.end.x + 150 - c.obj.x,
+                                        LEVEL_BOUNDS.end.y + 150 - c.obj.y
+                                    )
+
+                                    c.position.set(
+                                        c.obj.x + vecToObama.x * eased,
+                                        c.obj.y + vecToObama.y * eased
+                                    )
+
+                                    c.rotation =
+                                        c.rotation + random * eased * 0.1
+
+                                    //c.alpha = 1 - dd
+                                })
+                        }
+                    }
+                }
+            } else {
+                obama.rotation += 0.01
+                obama.skew.x += 0.006
+                obama.scale.x = Math.cos(obama.rotation) * 0.1
+                obama.scale.y = Math.sin(obama.rotation) * 0.05
+
+                obama.rotation = obama.rotation % (Math.PI * 2)
+                obama.skew.x = obama.skew.x % (Math.PI * 2)
+            }
         })
     }
+
+    public ominousSound = new Howl({
+        src: ["space_sounds.mp3"],
+        volume: 0.1,
+    })
 
     zoom() {
         return 2 ** (this.zoomLevel / 8)
@@ -563,6 +705,15 @@ export class EditorNode extends PIXI.Container {
         pos = pos.plus(this.cameraPos)
         return pos
     }
+
+    public obamaAnimStart = null
+    obamaAnim() {
+        console.log("hi")
+        this.ominousSound.play()
+        this.obamaAnimStart = Date.now()
+    }
+
+    public obamaEndingStart = null
 }
 const BLENDING_LAYER_CUTOFF = 45
 export class ObjectNode extends PIXI.Container {

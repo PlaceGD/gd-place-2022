@@ -18,9 +18,10 @@ import {
 import { database, deleteObject, placeObject } from "./init"
 import { vec } from "../utils/vector"
 import { canEdit } from "./auth"
-import { selectedObject, TIMELAPSE_MODE } from "../editor/app"
+import { pixiApp, selectedObject, TIMELAPSE_MODE } from "../editor/app"
 import { settings } from "../settings/settings"
 import { writable } from "svelte/store"
+import { Howl } from "howler"
 
 export const CHUNK_SIZE = vec(20 * 30, 20 * 30)
 
@@ -60,13 +61,43 @@ onValue(ref(database, "userCount"), (snapshot) => {
     userCount.set(snapshot.val())
 })
 
-export let eventEnd = null
-export let eventEndWritable = writable(null)
-onValue(ref(database, "editorState/eventEnd"), (snapshot) => {
-    eventEnd = snapshot.val()
+export let eventEnd = Date.now() / 1000 + 40
+// export let eventEnd = null
+// onValue(ref(database, "editorState/eventEnd"), (snapshot) => {
+//     eventEnd = snapshot.val()
+// })
 
-    eventEndWritable.set(eventEnd)
+let clockSound = new Howl({
+    src: ["tick.ogg"],
 })
+
+let finalClockSound = new Howl({
+    src: ["big_tick.ogg"],
+})
+
+export let timeleft = writable(null)
+
+let ended = false
+
+setInterval(() => {
+    if (eventEnd == null) return
+    let val = eventEnd * 1000 - Date.now()
+    if (val < 1000) val = 0
+
+    timeleft.set(val)
+
+    if (val != null) {
+        if (val == 0 && !ended) {
+            finalClockSound.play()
+            ended = true
+            pixiApp.endAnim()
+        } else if (val <= 3000 && !ended) {
+            finalClockSound.play()
+        } else if (val < 30000 && !ended) {
+            clockSound.play()
+        }
+    }
+}, 1000)
 
 let userColorCache = {}
 export async function getUsernameColors(username: string): Promise<number[]> {

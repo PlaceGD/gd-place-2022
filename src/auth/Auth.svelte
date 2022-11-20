@@ -24,7 +24,7 @@
         signInTwitter,
     } from "../firebase/auth"
     import { auth, database } from "../firebase/init"
-    import { getUsernameColors } from "../firebase/database"
+    import { getUsernameColors, timeleft } from "../firebase/database"
     import { toGradient } from "../editor/app"
     import { countingDown, eventStart } from "../countdown/countdown"
 
@@ -189,7 +189,7 @@
     class="all"
     style={loginPopupVisible ? "position: absolute; width: 100vw;" : ""}
 >
-    {#if loadedUserData == null && !loginPopupVisible}
+    {#if $timeleft != 0 && loadedUserData == null && !loginPopupVisible}
         <button
             class="log_in_out_button wiggle_button invis_button pos_move"
             style:margin-right={$countingDown ? "16px" : "100px"}
@@ -204,7 +204,7 @@
                 alt="sign in button"
             />
         </button>
-    {:else if !loginPopupVisible}
+    {:else if $timeleft != 0 && !loginPopupVisible}
         <button
             class="log_in_out_button invis_button wiggle_button pos_move"
             style:margin-right={$countingDown ? "16px" : "100px"}
@@ -249,7 +249,7 @@
         {/await}
     {/if}
 
-    {#if loginPopupVisible}
+    {#if $timeleft != 0 && loginPopupVisible}
         <div class="login_popup_container">
             {#if loadedUserData == null}
                 <button

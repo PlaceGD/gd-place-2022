@@ -112,32 +112,34 @@ export class EditorApp {
         this.playingMusic = false
     }
 
+    public app: PIXI.Application
+
     constructor(public canvas: HTMLCanvasElement, editorPosition) {
-        let app = new PIXI.Application({
+        this.app = new PIXI.Application({
             width: canvas.offsetWidth,
             height: canvas.offsetHeight,
             resizeTo: canvas,
-            backgroundColor: 0x287dff,
+            backgroundColor: 0x000000,
             view: canvas,
             resolution: 1,
         })
 
-        app.stage = new PIXI_LAYERS.Stage()
+        this.app.stage = new PIXI_LAYERS.Stage()
 
         let bgTiling = new PIXI.TilingSprite(
             PIXI.Texture.from("/gd/world/background.png"),
             2048 * 10,
             2048
         )
-        app.stage.addChild(bgTiling)
+        this.app.stage.addChild(bgTiling)
         bgTiling.tint = 0x287dff
 
         let center = new PIXI.Container()
-        app.stage.addChild(center)
+        this.app.stage.addChild(center)
 
         center.scale.y = -1
 
-        this.editorNode = new EditorNode(app, editorPosition)
+        this.editorNode = new EditorNode(this.app, editorPosition)
         center.addChild(this.editorNode)
 
         // for (let i = 0; i < 100; i++) {
@@ -210,7 +212,76 @@ export class EditorApp {
         // Change global volume.
         Howler.volume(0.25)
 
-        app.ticker.add(() => {
+        function easeOutExpo(x: number): number {
+            return x === 1 ? 1 : 1 - Math.pow(2, -10 * x)
+        }
+
+        function easeInExpo(x: number): number {
+            return x === 0 ? 0 : Math.pow(2, 10 * x - 10)
+        }
+
+        this.app.ticker.add(() => {
+            if (this.editorNode.obamaEndingStart != null) {
+                const obama = this.app.stage.getChildByName("obama")
+                const d = Date.now() - this.editorNode.obamaEndingStart
+
+                if (d > 2000) {
+                    const dd = Math.min((d - 2000) / 2000, 1)
+                    const eased = easeOutExpo(dd)
+                    obama.alpha = eased
+                    obama.scale.set(0.15 - 0.05 * eased)
+                }
+
+                // text 1: "Thank you for your objects."
+                const str1 = "Thank you for your objects."
+                const str2 = "I will make sure they get home safely."
+                const str3 = "Farewell."
+                if (d > 7000 && d < 8000) {
+                    const dd = (d - 7000) / 1000
+                    const t = this.app.stage.getChildByName(
+                        "obama_text"
+                    ) as PIXI.Text
+                    const substr = str1.substring(
+                        0,
+                        1 + Math.floor(dd * str1.length)
+                    )
+                    t.text = substr
+                } else if (d > 11000 && d < 12000) {
+                    const dd = (d - 11000) / 1000
+                    const t = this.app.stage.getChildByName(
+                        "obama_text"
+                    ) as PIXI.Text
+                    const substr = str2.substring(
+                        0,
+                        1 + Math.floor(dd * str2.length)
+                    )
+                    t.text = substr
+                } else if (d > 15000 && d < 16000) {
+                    const dd = (d - 15000) / 1000
+                    const t = this.app.stage.getChildByName(
+                        "obama_text"
+                    ) as PIXI.Text
+                    const substr = str3.substring(
+                        0,
+                        1 + Math.floor(dd * str3.length)
+                    )
+                    t.text = substr
+                }
+
+                if (d > 17000)
+                    (
+                        this.app.stage.getChildByName("obama_text") as PIXI.Text
+                    ).text = ""
+
+                if (d > 18000) {
+                    const dd = Math.min((d - 18000) / 1000, 1)
+                    const eased = easeInExpo(dd)
+                    obama.alpha = 1 - eased
+                    obama.scale.set(0.1 - 0.1 * eased)
+                }
+
+                return
+            }
             if (TIMELAPSE_MODE) {
                 if (history && start && timelapseTime) {
                     const time =
@@ -250,10 +321,10 @@ export class EditorApp {
                     }
                 }
             }
-            center.position.x = app.screen.width / 2
-            center.position.y = app.screen.height / 2
+            center.position.x = this.app.screen.width / 2
+            center.position.y = this.app.screen.height / 2
 
-            let bgOutside = 2048 - app.screen.height
+            let bgOutside = 2048 - this.app.screen.height
             bgTiling.y = map_range(
                 this.editorNode.cameraPos.y,
                 LEVEL_BOUNDS.start.y,
@@ -313,6 +384,64 @@ export class EditorApp {
 
     canvasSize() {
         return vec(this.canvas.offsetWidth, this.canvas.offsetHeight)
+    }
+
+    endAnim() {
+        this.editorNode.removePreview()
+        this.editorNode.setObjectsSelectable(false)
+        this.editorNode.deselectObject()
+        this.editorNode.tooltip.show = false
+        this.stopMusic()
+
+        this.dragging = null
+        this.pinching = null
+
+        setTimeout(() => {
+            this.editorNode.obamaAnim()
+        }, 5000)
+
+        setTimeout(() => {
+            this.editorNode.obamaAnimStart = null
+            this.editorNode.ominousSound.stop()
+            this.editorNode.ominousSound = null
+
+            this.app.stage.children.forEach((child) => {
+                child.visible = false
+            })
+            this.editorNode.obamaEndingStart = Date.now()
+
+            const new_obama = new PIXI.Sprite(
+                PIXI.Texture.from("/obama_final_form.png")
+            )
+            new_obama.anchor.set(0.5)
+            new_obama.position.set(
+                this.app.screen.width / 2,
+                this.app.screen.height / 2
+            )
+            new_obama.scale.set(1)
+            new_obama.alpha = 0
+
+            this.app.stage.addChild(new_obama)
+            new_obama.blendMode = PIXI.BLEND_MODES.ADD
+            new_obama.name = "obama"
+
+            const text = new PIXI.Text("", {
+                fontFamily: ["Cabin", "sans-serif"],
+                fontSize: 32,
+                fill: [0xffffff],
+                align: "center",
+            })
+
+            text.anchor.set(0.5)
+            text.position.set(
+                this.app.screen.width / 2,
+                this.app.screen.height * 0.8
+            )
+            text.scale.set(1)
+            text.name = "obama_text"
+
+            this.app.stage.addChild(text)
+        }, 31000)
     }
 }
 

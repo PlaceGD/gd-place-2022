@@ -2,97 +2,104 @@
     import { transform } from "svelte-motion"
     import { toGradient } from "../editor/app"
     import { currentUserData } from "../firebase/auth"
-    import { getUsernameColors, streamLink } from "../firebase/database"
+    import {
+        getUsernameColors,
+        streamLink,
+        timeleft,
+    } from "../firebase/database"
     import { settings, saveSettings, settings_writable } from "./settings"
     let settingsOpen = false
 </script>
 
-<div class="all">
-    <button
-        class="settings_button invis_button wiggle_button"
-        on:click={() => {
-            settingsOpen = !settingsOpen
-        }}
-    >
-        <img
-            draggable="false"
-            src="/gd/editor/GJ_optionsBtn_001.png"
-            alt="settings button"
-        />
-    </button>
+{#if $timeleft != 0}
+    <div class="all">
+        <button
+            class="settings_button invis_button wiggle_button"
+            on:click={() => {
+                settingsOpen = !settingsOpen
+            }}
+        >
+            <img
+                draggable="false"
+                src="/gd/editor/GJ_optionsBtn_001.png"
+                alt="settings button"
+            />
+        </button>
 
-    <div
-        class="settings_menu"
-        style:transform={settingsOpen ? "" : "scaleY(0)"}
-    >
-        {#each Object.keys(settings) as key, i}
-            <div
-                class="onoffsetting"
-                style:opacity={settingsOpen ? 1 : 0}
-                style:transform={settingsOpen ? "" : `translateY(-20px)`}
-                style:transition="ease-out 0.2s"
-                style:transition-delay={settingsOpen
-                    ? `${0.1 + i * 0.03}s`
-                    : "0s"}
-            >
-                <input
-                    type="checkbox"
-                    id={key}
-                    bind:checked={$settings_writable[key].enabled}
-                    on:change={(event) => {
-                        saveSettings()
-                        settings[key].cb && settings[key].cb(event)
-                    }}
-                />
-                <label for={key}> {settings[key].label} </label>
-            </div>
-        {/each}
-        {#if $currentUserData?.data?.username}
-            <div
+        <div
+            class="settings_menu"
+            style:transform={settingsOpen ? "" : "scaleY(0)"}
+        >
+            {#each Object.keys(settings) as key, i}
+                <div
+                    class="onoffsetting"
+                    style:opacity={settingsOpen ? 1 : 0}
+                    style:transform={settingsOpen ? "" : `translateY(-20px)`}
+                    style:transition="ease-out 0.2s"
+                    style:transition-delay={settingsOpen
+                        ? `${0.1 + i * 0.03}s`
+                        : "0s"}
+                >
+                    <input
+                        type="checkbox"
+                        id={key}
+                        bind:checked={$settings_writable[key].enabled}
+                        on:change={(event) => {
+                            saveSettings()
+                            settings[key].cb && settings[key].cb(event)
+                        }}
+                    />
+                    <label for={key}> {settings[key].label} </label>
+                </div>
+            {/each}
+            {#if $currentUserData?.data?.username}
+                <div
+                    style:opacity={settingsOpen ? 1 : 0}
+                    style:transform={settingsOpen ? "" : `translateY(-10px)`}
+                    style:transition="ease-out 0.2s"
+                    style:transition-delay={settingsOpen
+                        ? `${0.13 + Object.keys(settings).length * 0.03}s`
+                        : "0s"}
+                >
+                    {#await getUsernameColors($currentUserData?.data?.username) then colors}
+                        <b> Name tag: </b>
+                        <div
+                            class="username_display {colors.length > 1
+                                ? 'username_gradient'
+                                : ''}"
+                            style={colors.length == 1
+                                ? `color: #${colors[0].toString(16)}`
+                                : `background-image: ${toGradient(colors)}`}
+                        >
+                            {$currentUserData?.data?.username}
+                        </div>
+                    {/await}
+                </div>
+            {/if}
+
+            <i
+                class="name_color_info"
                 style:opacity={settingsOpen ? 1 : 0}
                 style:transform={settingsOpen ? "" : `translateY(-10px)`}
                 style:transition="ease-out 0.2s"
                 style:transition-delay={settingsOpen
-                    ? `${0.13 + Object.keys(settings).length * 0.03}s`
+                    ? `${0.2 + Object.keys(settings).length * 0.03}s`
                     : "0s"}
             >
-                {#await getUsernameColors($currentUserData?.data?.username) then colors}
-                    <b> Name tag: </b>
-                    <div
-                        class="username_display {colors.length > 1
-                            ? 'username_gradient'
-                            : ''}"
-                        style={colors.length == 1
-                            ? `color: #${colors[0].toString(16)}`
-                            : `background-image: ${toGradient(colors)}`}
-                    >
-                        {$currentUserData?.data?.username}
-                    </div>
-                {/await}
-            </div>
-        {/if}
-
-        <i
-            class="name_color_info"
-            style:opacity={settingsOpen ? 1 : 0}
-            style:transform={settingsOpen ? "" : `translateY(-10px)`}
-            style:transition="ease-out 0.2s"
-            style:transition-delay={settingsOpen
-                ? `${0.2 + Object.keys(settings).length * 0.03}s`
-                : "0s"}
-        >
-            <b> Colored names: </b> if you want your name tag to be a different
-            color, send your username and the color you want in a donation in
-            <a
-                href={$streamLink || "https://www.youtube.com/c/Spu7Nix"}
-                target="_blank"
-                rel="noreferrer"
-            >
-                Spu7Nix's stream</a
-            >!
-        </i>
+                <b> Colored names: </b> if you want your name tag to be a
+                different color, send your username and the color you want in a
+                donation in
+                <a
+                    href={$streamLink || "https://www.youtube.com/c/Spu7Nix"}
+                    target="_blank"
+                    rel="noreferrer"
+                >
+                    Spu7Nix's stream</a
+                >!
+            </i>
+        </div>
     </div>
-</div>
+{/if}
 
 <style>
     .all {
