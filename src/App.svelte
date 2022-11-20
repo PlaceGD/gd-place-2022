@@ -32,13 +32,11 @@
 
 <SvelteToast options={{ reversed: true, intro: { y: 192 } }} />
 
-<!-- <Landing /> -->
-
 {#if isEmailVerification}
     <div class="email">
         {emailSuccess}
     </div>
-{:else if typeof $currentUserData != "string"}
+{:else if typeof $currentUserData != "string" && !$eventEnded}
     <Editor />
     <div class="auth_settings">
         {#if !$eventEnded}
@@ -48,6 +46,8 @@
             <Auth loadedUserData={$currentUserData} />
         {/if}
     </div>
+{:else if $eventEnded}
+    <Landing />
 {:else}
     <div class="loading_container">
         <div class="loading">
