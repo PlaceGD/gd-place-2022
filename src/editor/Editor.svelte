@@ -32,6 +32,7 @@
         streamLink,
         updateObjectCategory,
         userCount,
+        eventEndWritable,
     } from "../firebase/database"
     import { canEdit, currentUserData } from "../firebase/auth"
     import {
@@ -210,6 +211,16 @@
         return [EditorMenu.Build, EditorMenu.Edit, EditorMenu.Delete][
             menuIndex++ % 3
         ]
+    }
+    let timeleft = null
+    $: if ($eventEndWritable != null) {
+        let timeleftInterval = setInterval(() => {
+            timeleft = $eventEndWritable * 1000 - Date.now()
+
+            if (timeleft <= 0) {
+                clearInterval(timeleftInterval)
+            }
+        }, 1000)
     }
 </script>
 
@@ -510,6 +521,15 @@
                     </div>
                 {/await}
             {/await}
+        </div>
+    {/if}
+
+    {#if timeleft != null}
+        <div class="end_countdown_container">
+            <div class="end_countdown">
+                <!-- $eventEndWritable -->
+                {new Date(timeleft).toISOString().substr(11, 8)}
+            </div>
         </div>
     {/if}
 
@@ -1382,6 +1402,11 @@
         .login_requirement_message {
             font-size: calc(var(--font-large) - 6px) !important;
         }
+
+        .end_countdown_container {
+            top: 100px !important;
+            justify-content: left !important;
+        }
     }
 
     @media screen and (max-width: 600px) {
@@ -1781,6 +1806,28 @@
         font-style: italic;
         padding: var(--grid-gap);
         text-align: center;
+    }
+    .end_countdown_container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        position: absolute;
+        top: 0;
+    }
+    .end_countdown {
+        width: fit-content;
+        height: fit-content;
+        padding: 10px;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        background-color: #000c;
+        border-radius: 16px;
+        color: white;
+        font-size: var(--font-medium);
+        font-family: Cabin, sans-serif;
+        overflow: hidden;
+        margin: 12px;
     }
     .objects_grid_container {
         overflow-x: hidden;

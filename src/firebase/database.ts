@@ -60,6 +60,14 @@ onValue(ref(database, "userCount"), (snapshot) => {
     userCount.set(snapshot.val())
 })
 
+export let eventEnd = null
+export let eventEndWritable = writable(null)
+onValue(ref(database, "editorState/eventEnd"), (snapshot) => {
+    eventEnd = snapshot.val()
+
+    eventEndWritable.set(eventEnd)
+})
+
 let userColorCache = {}
 export async function getUsernameColors(username: string): Promise<number[]> {
     if (userColorCache[username]) {

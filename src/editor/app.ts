@@ -30,7 +30,7 @@ export const toGradient = (cols: number[]): string => {
 
 export const DRAGGING_THRESHOLD = 40.0
 
-export const TIMELAPSE_MODE = true
+export const TIMELAPSE_MODE = false
 export const TIMELAPSE_SPEED = 1000
 // 1000 seconds per second
 

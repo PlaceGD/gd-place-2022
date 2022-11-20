@@ -1,8 +1,8 @@
-import prompt from "prompt-sync";
+import prompt from "prompt-sync"
 
-let input = prompt({ sigint: true });
+let input = prompt({ sigint: true })
 
-import { database } from "./init.js";
+import { database } from "./init.js"
 
 import { getAuth } from "firebase-admin/auth"
 
@@ -14,15 +14,17 @@ if (!username) {
 
 let usernames = username.split(",")
 
-for(let u of usernames) {
-    let user = await database.ref(`/userName/${u.trim().toLowerCase()}`).get();
+for (let u of usernames) {
+    let user = await database.ref(`/userName/${u.trim().toLowerCase()}`).get()
 
     if (user.val() === null) {
         console.error("username doesnt exist!")
         throw new Error()
     }
 
-    console.log(`user ${u} email: ${(await getAuth().getUser(user.val().uid)).email}`)
+    console.log(
+        `user ${u} email: ${(await getAuth().getUser(user.val().uid)).email}`
+    )
 
     await database.ref(`/bannedUsers/${user.val().uid}`).set(true)
 }

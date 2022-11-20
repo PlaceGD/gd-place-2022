@@ -388,16 +388,16 @@ export class EditorNode extends PIXI.Container {
         this.world.sortableChildren = true
 
         // console.log("aaaaaaaaa", app, this)
-        const countDown = new CountDownNode(
-            app,
-            this,
-            clamp(
-                editorPosition.x - 27 * 30,
-                0,
-                LEVEL_BOUNDS.end.x - 27 * 30 * 2
-            )
-        )
-        this.addChild(countDown)
+        // const countDown = new CountDownNode(
+        //     app,
+        //     this,
+        //     clamp(
+        //         editorPosition.x - 27 * 30,
+        //         0,
+        //         LEVEL_BOUNDS.end.x - 27 * 30 * 2
+        //     )
+        // )
+        // this.addChild(countDown)
 
         this.selectableWorld = new PIXI.Container()
         this.addChild(this.selectableWorld)

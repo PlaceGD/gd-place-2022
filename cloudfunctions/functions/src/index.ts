@@ -5,7 +5,7 @@ import { beforeUserCreated } from "firebase-functions/v2/identity"
 
 import objects from "./objects.json"
 
-import { ALLOWED_EMAIL_DOMAINS, BAD_WORDS } from "./badwords"
+import {BAD_WORDS } from "./badwords"
 
 export * from "./gd"
 
@@ -266,14 +266,19 @@ export const beforecreated = beforeUserCreated((event) => {
     const user = event.data
 
     if (user?.email) {
-        let domain = user.email.split("@")[1].replace("@", "")
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "Due to malicious users, email sign up is disabled. Please use a different sign-in method."
+        )
 
-        if (!ALLOWED_EMAIL_DOMAINS.includes(domain)) {
-            throw new functions.https.HttpsError(
-                "invalid-argument",
-                "Invalid email"
-            )
-        }
+        // let domain = user.email.split("@")[1].replace("@", "")
+
+        // if (!ALLOWED_EMAIL_DOMAINS.includes(domain)) {
+        //     throw new functions.https.HttpsError(
+        //         "invalid-argument",
+        //         "Invalid email"
+        //     )
+        // }
     }
 })
 
