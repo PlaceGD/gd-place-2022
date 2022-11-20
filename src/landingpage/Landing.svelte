@@ -26,8 +26,8 @@
     let totalPlacedEl
     let totalDeletedEl
 
-    let totalPlaced = 0
-    let totalDeleted = 0
+    let totalPlaced = 1000000
+    let totalDeleted = 1000000
 
     get(ref(database, "totalPlaced")).then((val) => {
         console.log(totalPlaced)
@@ -389,6 +389,34 @@
     :root {
         --shadow-color: #ff9e9e77;
         --shadow-color-light: white;
+
+        --text-large: 75px;
+        --text-medium: 45px;
+        --text-small: 30px;
+    }
+
+    @media (max-width: 800px) {
+        :root {
+            --text-large: 55px;
+            --text-medium: 35px;
+            --text-small: 25px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        :root {
+            --text-large: 40px;
+            --text-medium: 25px;
+            --text-small: 15px;
+        }
+    }
+
+    @media (max-width: 500px) {
+        :root {
+            --text-large: 25px;
+            --text-medium: 15px;
+            --text-small: 15px;
+        }
     }
 
     .background {
@@ -452,6 +480,7 @@
         align-items: center;
         flex-direction: column;
         gap: 50px;
+        padding: 20px;
     }
 
     .canvas {
@@ -463,11 +492,12 @@
 
     .participating_text {
         font-family: "Archivo Black", "Archivo", sans-serif;
-        font-size: 75px;
+        font-size: var(--text-large);
         color: white;
         z-index: 1;
         text-shadow: 0px 0px 20px #000, 0px 0px 20px #000;
         animation: neon 5s infinite;
+        text-align: center;
     }
 
     .total_text_container {
@@ -477,21 +507,25 @@
         align-items: center;
         /* opacity: 0.7; */
         text-shadow: 0px 0px 20px #000, 0px 0px 20px #000;
+        text-align: center;
+        gap: 10px;
     }
 
     .total_placed_text {
         font-family: Cabin;
         color: white;
         z-index: 1;
-        font-size: 45px;
+        font-size: var(--text-medium);
         text-shadow: 0px 0px 20px #000, 0px 0px 20px #000;
+        text-align: center;
     }
 
     .total_deleted_text {
         font-family: Cabin;
         color: white;
         z-index: 1;
-        font-size: 40px;
+        font-size: var(--text-medium);
+        text-align: center;
     }
 
     .total_users_text,
@@ -501,20 +535,17 @@
         font-family: Cabin;
         color: white;
         z-index: 1;
-        font-size: 30px;
+        font-size: var(--text-small);
         text-decoration: underline;
         text-decoration-color: #0000;
         text-shadow: 0px 0px 20px #000;
+        text-align: center;
     }
 
     .stream_link:hover {
         text-decoration-color: #ffff;
         transition: text-decoration-color 0.5s ease-in-out;
         cursor: pointer;
-    }
-
-    .level_id_text:active {
-        color: red;
     }
 
     @keyframes fade-in-neon {
