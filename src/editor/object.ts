@@ -1,5 +1,6 @@
 import { vec } from "../utils/vector"
 import objectList from "../objects.json"
+import { PRELOAD_IMAGES } from "./app"
 
 export class GdColor {
     constructor(

@@ -16,7 +16,7 @@ import { clamp, wrap } from "../utils/math"
 
 import { MAX_ZOOM, MIN_ZOOM, toastErrorTheme } from "../const"
 import { database } from "../firebase/init"
-import { pixiApp, rgbToHexnum, selectedObject } from "./app"
+import { getTexture, pixiApp, rgbToHexnum, selectedObject } from "./app"
 import { settings } from "../settings/settings"
 import { CountDownNode } from "../countdown/countdown"
 import { Howl } from "howler"
@@ -709,8 +709,8 @@ export class EditorNode extends PIXI.Container {
     public obamaAnimStart = null
     obamaAnim() {
         console.log("hi")
-        this.ominousSound.play()
-        this.obamaAnimStart = Date.now()
+        // this.ominousSound.play()
+        // this.obamaAnimStart = Date.now()
     }
 
     public obamaEndingStart = null
@@ -730,7 +730,7 @@ export class ObjectNode extends PIXI.Container {
     ) {
         super()
         let mainSprite = new PIXI.Sprite(
-            PIXI.Texture.from(`/gd/objects/main/${obj.id}.png`)
+            getTexture(`/gd/objects/main/${obj.id}.png`)
         )
 
         this.parentGroup = layerGroup
@@ -763,7 +763,7 @@ export class ObjectNode extends PIXI.Container {
         }
 
         let detailSprite = new PIXI.Sprite(
-            PIXI.Texture.from(`/gd/objects/detail/${obj.id}.png`)
+            getTexture(`/gd/objects/detail/${obj.id}.png`)
         )
         detailSprite.interactive = true
 

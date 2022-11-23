@@ -298,6 +298,11 @@
     }}
 />
 
+<button
+    on:click={() => pixiApp.takeHighResScreenshot()}
+    style="position: absolute; z-index: 100;">Take screenshots</button
+>
+<!-- <canvas id="screenshot_canvas" /> -->
 <div class="editor">
     <Motion
         let:motion

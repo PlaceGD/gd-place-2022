@@ -7,12 +7,13 @@ import { onValue, ref } from "firebase/database"
 import { database } from "../firebase/init"
 import { getObjSettings } from "../editor/object"
 import { writable } from "svelte/store"
+import { getTexture } from "../editor/app"
 
 export const OBJECTS = [1, 2, 3, 4, 5, 6, 7]
 
 export function randomTexture() {
     let num = Math.floor(Math.random() * (OBJECTS.length - 1) + 1) // The maximum is exclusive and the minimum is inclusive
-    return PIXI.Texture.from(`/gd/objects/main/${num}.png`)
+    return getTexture(`/gd/objects/main/${num}.png`)
 }
 
 export let eventStart = null

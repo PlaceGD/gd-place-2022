@@ -11,7 +11,7 @@
     import Editor from "../editor/Editor.svelte"
     import { streamLink } from "../firebase/database"
     import { database } from "../firebase/init"
-    import { obamaAnimEnded } from "../editor/app"
+    import { getTexture, obamaAnimEnded } from "../editor/app"
 
     const variants = {
         editorHeight: {
@@ -57,7 +57,7 @@
     export function randomTexture() {
         let num = Math.floor(Math.random() * (OBJECTS.length - 1) + 1) // The maximum is exclusive and the minimum is inclusive
 
-        return PIXI.Texture.from(`/gd/objects/main/${OBJECTS[num]}.png`)
+        return getTexture(`/gd/objects/main/${OBJECTS[num]}.png`)
     }
 
     const SHADER = `

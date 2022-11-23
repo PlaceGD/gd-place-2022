@@ -18,10 +18,16 @@ import {
 import { database, deleteObject, placeObject } from "./init"
 import { vec } from "../utils/vector"
 import { canEdit } from "./auth"
-import { pixiApp, selectedObject, TIMELAPSE_MODE } from "../editor/app"
+import {
+    pixiApp,
+    selectedObject,
+    TIMELAPSE_MODE,
+    USE_LOCAL,
+} from "../editor/app"
 import { settings } from "../settings/settings"
 import { writable } from "svelte/store"
 import { Howl } from "howler"
+import chunks from "../chunks.json"
 
 export const CHUNK_SIZE = vec(20 * 30, 20 * 30)
 
@@ -326,30 +332,45 @@ export class ChunkNode extends PIXI.Container {
                     })
                 }
                 if (!this.loaded) {
-                    this.unsub1 = onChildAdded(
-                        ref(database, `chunks/${chunkName}`),
-                        (snapshot) => {
+                    if (USE_LOCAL) {
+                        this.unsub1 = () => {}
+                        this.unsub2 = () => {}
+
+                        for (let [key, objstring] of Object.entries(
+                            chunks[chunkName] || {}
+                        )) {
                             this.addObject(
-                                snapshot.key,
-                                GDObject.fromDatabaseString(snapshot.val())
+                                key,
+                                GDObject.fromDatabaseString(objstring as string)
                             )
                         }
-                    )
-                    this.unsub2 = onChildRemoved(
-                        ref(database, `chunks/${chunkName}`),
-                        (snapshot) => {
-                            if (this.getChildByName(snapshot.key).visible)
-                                editorNode.deleteLabels.addChild(
-                                    new DeleteObjectLabel(
-                                        snapshot.val(),
-                                        this.getChildByName(
-                                            snapshot.key
-                                        ).position
-                                    )
+                    } else {
+                        this.unsub1 = onChildAdded(
+                            ref(database, `chunks/${chunkName}`),
+                            (snapshot) => {
+                                this.addObject(
+                                    snapshot.key,
+                                    GDObject.fromDatabaseString(snapshot.val())
                                 )
-                            this.removeObject(snapshot.key)
-                        }
-                    )
+                            }
+                        )
+                        this.unsub2 = onChildRemoved(
+                            ref(database, `chunks/${chunkName}`),
+                            (snapshot) => {
+                                if (this.getChildByName(snapshot.key).visible)
+                                    editorNode.deleteLabels.addChild(
+                                        new DeleteObjectLabel(
+                                            snapshot.val(),
+                                            this.getChildByName(
+                                                snapshot.key
+                                            ).position
+                                        )
+                                    )
+                                this.removeObject(snapshot.key)
+                            }
+                        )
+                    }
+
                     this.loaded = true
                     //this.marker.tint = 0x00ff00
                 }
