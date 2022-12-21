@@ -69,7 +69,9 @@ const BRIGTHNESS_FILTER = new PIXI.Filter(undefined, BRIGHTNESS_SHADER)
 export class EditorNode extends PIXI.Container {
     public currentObjectTab: string = "blocks"
     public zoomLevel: number = 0
+    public targetZoomLevel: number
     public cameraPos: Vector = vec(0, 0)
+    public targetCameraPos: Vector = vec(0, 0)
     public objectPreview: GDObject | null = null
     public objectPreviewNode: ObjectNode | null = null
     public layerGroup: PIXI_LAYERS.Group
@@ -89,6 +91,7 @@ export class EditorNode extends PIXI.Container {
     public world: PIXI.Container
 
     public visibleChunks: Set<string> = new Set()
+
     toggleGround() {
         this.groundTiling.visible = !settings.hideGround.enabled
     }
@@ -358,11 +361,14 @@ export class EditorNode extends PIXI.Container {
         this.addChild(this.objectPreviewNode)
     }
 
+    public cameraVel = vec(0, 0)
+
     constructor(app: PIXI.Application, editorPosition) {
         super()
 
-        this.cameraPos = vec(editorPosition.x ?? 0, editorPosition.y ?? 0)
-        this.zoomLevel = editorPosition.zoom ?? 0
+        this.targetCameraPos = vec(editorPosition.x ?? 0, editorPosition.y ?? 0)
+
+        this.targetZoomLevel = editorPosition.zoom ?? 0
 
         let gridGraph = new PIXI.Graphics()
         this.addChild(gridGraph)
@@ -480,7 +486,7 @@ export class EditorNode extends PIXI.Container {
             if (this.obamaEndingStart != null) {
                 return
             }
-            this.cameraPos = this.cameraPos.clamped(
+            this.targetCameraPos = this.targetCameraPos.clamped(
                 LEVEL_BOUNDS.start,
                 LEVEL_BOUNDS.end
             )
@@ -501,21 +507,21 @@ export class EditorNode extends PIXI.Container {
 
             //console.log(this.scale, prev_values[2])
 
-            if (prev_values[2] != this.scale.x) {
-                gridGraph.clear()
-                for (let x = 0; x <= LEVEL_BOUNDS.end.x; x += 30) {
-                    gridGraph
-                        .lineStyle(1.0 / this.zoom(), 0x000000, 0.35)
-                        .moveTo(x, LEVEL_BOUNDS.start.y)
-                        .lineTo(x, LEVEL_BOUNDS.end.y)
-                }
-                for (let y = 0; y <= LEVEL_BOUNDS.end.y; y += 30) {
-                    gridGraph
-                        .lineStyle(1.0 / this.zoom(), 0x000000, 0.35)
-                        .moveTo(LEVEL_BOUNDS.start.x, y)
-                        .lineTo(LEVEL_BOUNDS.end.x, y)
-                }
-            }
+            // if (prev_values[2] != this.scale.x) {
+            //     gridGraph.clear()
+            //     for (let x = 0; x <= LEVEL_BOUNDS.end.x; x += 30) {
+            //         gridGraph
+            //             .lineStyle(1.0 / this.zoom(), 0x000000, 0.35)
+            //             .moveTo(x, LEVEL_BOUNDS.start.y)
+            //             .lineTo(x, LEVEL_BOUNDS.end.y)
+            //     }
+            //     for (let y = 0; y <= LEVEL_BOUNDS.end.y; y += 30) {
+            //         gridGraph
+            //             .lineStyle(1.0 / this.zoom(), 0x000000, 0.35)
+            //             .moveTo(LEVEL_BOUNDS.start.x, y)
+            //             .lineTo(LEVEL_BOUNDS.end.x, y)
+            //     }
+            // }
 
             let to_delete = []
             this.deleteLabels.children.forEach((label) => {
@@ -770,13 +776,13 @@ export class ObjectNode extends PIXI.Container {
         detailSprite.anchor.set(0.5)
         detailSprite.scale.set(0.25, -0.25)
 
-        for (let sprite of [mainSprite, detailSprite]) {
-            sprite.on("mouseover", showTooltip)
-            sprite.on("touchstart", showTooltip)
+        // for (let sprite of [mainSprite, detailSprite]) {
+        //     sprite.on("mouseover", showTooltip)
+        //     sprite.on("touchstart", showTooltip)
 
-            sprite.on("touchend", hideTooltip)
-            sprite.on("mouseout", hideTooltip)
-        }
+        //     sprite.on("touchend", hideTooltip)
+        //     sprite.on("mouseout", hideTooltip)
+        // }
 
         this.addChild(detailSprite)
 
@@ -900,64 +906,65 @@ class TooltipNode extends PIXI.Graphics {
     }
 
     update(on: ObjectNode) {
-        const padding = 5
+        console.log(on.name)
+        // const padding = 5
 
-        const size = Math.min(Math.max(MIN_ZOOM - this.zoom, 6), 20)
+        // const size = Math.min(Math.max(MIN_ZOOM - this.zoom, 6), 20)
 
-        this.text.style.fontSize = size * 0.8
-        this.nameText.style.fontSize = size
+        // this.text.style.fontSize = size * 0.8
+        // this.nameText.style.fontSize = size
 
-        if (this.currentObject != null)
-            this.currentObject.getChildByName("highlight")?.destroy()
-        this.currentObject = on
-        const highlight = new PIXI.Graphics()
-        highlight.visible =
-            this.show &&
-            !settings.disableObjectOutline.enabled &&
-            settings.showTooltips.enabled
+        // if (this.currentObject != null)
+        //     this.currentObject.getChildByName("highlight")?.destroy()
+        // this.currentObject = on
+        // const highlight = new PIXI.Graphics()
+        // highlight.visible =
+        //     this.show &&
+        //     !settings.disableObjectOutline.enabled &&
+        //     settings.showTooltips.enabled
 
-        if (this.show && settings.showTooltips.enabled) {
-            selectedObject.set(on.getObjInfo())
-        }
-        highlight.name = "highlight"
-        highlight.alpha = 0.5
-        highlight
-            .lineStyle(1 / this.currentObject.scale.y, 0x46f0fc, 1)
-            .drawRect(
-                -on.mainSprite().width / 2 - 2,
-                -on.mainSprite().height / 2 - 2,
-                on.mainSprite().width + 4,
-                on.mainSprite().height + 4
-            )
-        this.currentObject.addChild(highlight)
+        // if (this.show && settings.showTooltips.enabled) {
+        //     selectedObject.set(on.getObjInfo())
+        // }
+        // highlight.name = "highlight"
+        // highlight.alpha = 0.5
+        // highlight
+        //     .lineStyle(1 / this.currentObject.scale.y, 0x46f0fc, 1)
+        //     .drawRect(
+        //         -on.mainSprite().width / 2 - 2,
+        //         -on.mainSprite().height / 2 - 2,
+        //         on.mainSprite().width + 4,
+        //         on.mainSprite().height + 4
+        //     )
+        // this.currentObject.addChild(highlight)
 
-        getPlacedUsername(on.name).then(async (username) => {
-            // check for color
-            let color = await getUsernameColors(username)
+        // //getPlacedUsername(on.name).then(async (username) => {
+        // // check for color
+        // let color = 0xffffff
 
-            this.nameText.text = username
-            this.nameText.style.fill = color
+        // this.nameText.text = on.name
+        // this.nameText.style.fill = color
 
-            this.clear()
+        // this.clear()
 
-            this.nameText.x = this.text.width + padding
+        // this.nameText.x = this.text.width + padding
 
-            this.beginFill(0x000000, 0.7)
-            this.drawRoundedRect(
-                this.text.x - padding / 2,
-                this.text.y + this.height / 2 - padding / 2,
-                this.text.width + this.nameText.width + padding * 2,
-                Math.max(this.text.height, this.nameText.height) + padding,
-                5
-            )
+        // this.beginFill(0x000000, 0.7)
+        // this.drawRoundedRect(
+        //     this.text.x - padding / 2,
+        //     this.text.y + this.height / 2 - padding / 2,
+        //     this.text.width + this.nameText.width + padding * 2,
+        //     Math.max(this.text.height, this.nameText.height) + padding,
+        //     5
+        // )
 
-            this.x = on.x - (this.text.width + this.nameText.width) / 2
-            this.y = on.y - (this.height - padding * 2)
+        // this.x = on.x - (this.text.width + this.nameText.width) / 2
+        // this.y = on.y - (this.height - padding * 2)
 
-            this.endFill()
+        // this.endFill()
 
-            this.visible = this.show && settings.showTooltips.enabled
-        })
+        // this.visible = this.show && settings.showTooltips.enabled
+        //})
     }
 }
 

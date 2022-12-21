@@ -514,6 +514,7 @@
         align-items: flex-start;
         z-index: 50;
         pointer-events: none;
+        display: none;
     }
 
     .all * {

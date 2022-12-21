@@ -16,6 +16,7 @@
         obamaAnimEnded,
         selectedObject,
         toGradient,
+        TIMELAPSE_SPEED,
     } from "./app"
 
     import {
@@ -46,13 +47,9 @@
     import { onMount } from "svelte"
     import { settings, settings_writable } from "../settings/settings"
     import { getPlacedUsername, LEVEL_BOUNDS, SPAWN_POS } from "./nodes"
-    import {
-        countingDown,
-        eventStartWritable,
-        eventEnded,
-    } from "../countdown/countdown"
+    import { countingDown, eventStartWritable } from "../countdown/countdown"
     import { clamp } from "../utils/math"
-    import WarpSpeed from "../warpspeed.js"
+    // import WarpSpeed from "../warpspeed.js"
 
     $: Object.keys(settings).forEach((key) => {
         settings[key] = $settings_writable[key]
@@ -120,19 +117,19 @@
         pixiAppStore.set(new EditorApp($pixiCanvas, editorPosition))
         switchMenu(EditorMenu.Build)
 
-        const x = new WarpSpeed("starfield_canvas", {
-            speed: 1,
-            speedAdjFactor: 0.03,
-            density: 5,
-            shape: "circle",
-            warpEffect: true,
-            warpEffectLength: 8,
-            depthFade: true,
-            starSize: 5,
-            backgroundColor: "#000000",
-            starColor: "#FFFFFF",
-        })
-        console.log(x)
+        // const x = new WarpSpeed("starfield_canvas", {
+        //     speed: 1,
+        //     speedAdjFactor: 0.03,
+        //     density: 5,
+        //     shape: "circle",
+        //     warpEffect: true,
+        //     warpEffectLength: 8,
+        //     depthFade: true,
+        //     starSize: 5,
+        //     backgroundColor: "#000000",
+        //     starColor: "#FFFFFF",
+        // })
+        // console.log(x)
     })
 
     enum EditTab {
@@ -235,11 +232,9 @@
 
 <svelte:window
     on:pointerup={(e) => {
-        if ($timeleft == 0 && !$eventEnded) return
         pixiApp.dragging = null
     }}
     on:pointermove={(e) => {
-        if ($timeleft == 0 && !$eventEnded) return
         pixiApp.mousePos = vec(e.pageX, e.pageY)
         if (
             pixiApp.dragging &&
@@ -253,45 +248,101 @@
     }}
     on:keydown={(e) => {
         if ($timeleft == 0) return
-        if ($canEdit) {
-            if (e.code == "Digit1") {
-                e.preventDefault()
-                switchMenu(EditorMenu.Build)
-                return
-            }
-            if (e.code == "Digit2") {
-                e.preventDefault()
-                switchMenu(EditorMenu.Edit)
-                return
-            }
-            if (e.code == "Digit3") {
-                e.preventDefault()
-                switchMenu(EditorMenu.Delete)
-                return
-            }
-            for (let tab of EDIT_BUTTONS) {
-                for (let button of tab.buttons) {
+        console.log(e.code)
+
+        if (e.code == "Space") {
+            e.preventDefault()
+            pixiApp.paused = !pixiApp.paused
+            return
+        }
+
+        if (e.shiftKey && e.code == "ArrowLeft") {
+            e.preventDefault()
+            pixiApp.currentTime -= 300 * TIMELAPSE_SPEED
+            console.log(pixiApp.currentTime - 1668798001015)
+            return
+        }
+
+        if (e.shiftKey && e.code == "ArrowRight") {
+            e.preventDefault()
+            pixiApp.currentTime += 300 * TIMELAPSE_SPEED
+            console.log(pixiApp.currentTime - 1668798001015)
+            return
+        }
+
+        if (e.code == "ArrowUp") {
+            e.preventDefault()
+            pixiApp.zoomVel += 0.005
+            pixiApp.zoomVel = Math.min(pixiApp.zoomVel, 0.2)
+            console.log(pixiApp.zoomVel)
+            return
+        }
+
+        if (e.code == "ArrowDown") {
+            e.preventDefault()
+            pixiApp.zoomVel -= 0.005
+            pixiApp.zoomVel = Math.max(pixiApp.zoomVel, -0.2)
+            console.log(pixiApp.zoomVel)
+            return
+        }
+
+        if (e.code == "ArrowLeft") {
+            e.preventDefault()
+            pixiApp.currentTime -= 3000 * TIMELAPSE_SPEED
+            console.log(pixiApp.currentTime - 1668798001015)
+            return
+        }
+
+        if (e.code == "ArrowRight") {
+            e.preventDefault()
+            pixiApp.currentTime += 3000 * TIMELAPSE_SPEED
+            console.log(pixiApp.currentTime - 1668798001015)
+            return
+        }
+
+        if (e.key == "c") {
+            e.preventDefault()
+            pixiApp.cinematic = !pixiApp.cinematic
+            return
+        }
+
+        if (e.code == "Digit1") {
+            e.preventDefault()
+            switchMenu(EditorMenu.Build)
+            return
+        }
+        if (e.code == "Digit2") {
+            e.preventDefault()
+            switchMenu(EditorMenu.Edit)
+            return
+        }
+        if (e.code == "Digit3") {
+            e.preventDefault()
+            switchMenu(EditorMenu.Delete)
+            return
+        }
+        for (let tab of EDIT_BUTTONS) {
+            for (let button of tab.buttons) {
+                if (
+                    e.key.toLowerCase() == button.shortcut?.key &&
+                    e.shiftKey == button.shortcut?.shift &&
+                    e.altKey == button.shortcut?.alt
+                ) {
+                    let obj = pixiApp.editorNode.objectPreview
+                    e.preventDefault()
                     if (
-                        e.key.toLowerCase() == button.shortcut?.key &&
-                        e.shiftKey == button.shortcut?.shift &&
-                        e.altKey == button.shortcut?.alt
+                        !(
+                            obj == null ||
+                            (["cw_5", "ccw_5"].includes(button["image"]) &&
+                                getObjSettings(
+                                    pixiApp.editorNode.objectPreview?.id
+                                ).solid)
+                        )
                     ) {
-                        let obj = pixiApp.editorNode.objectPreview
-                        e.preventDefault()
-                        if (
-                            !(
-                                obj == null ||
-                                (["cw_5", "ccw_5"].includes(button["image"]) &&
-                                    getObjSettings(
-                                        pixiApp.editorNode.objectPreview?.id
-                                    ).solid)
-                            )
-                        ) {
-                            button.cb(obj)
-                            pixiApp.editorNode.updateObjectPreview()
-                        }
-                        return
+                        button.cb(obj)
+                        pixiApp.editorNode.updateObjectPreview()
                     }
+                    return
                 }
             }
         }
@@ -323,7 +374,6 @@
             }
         }}
         on:wheel={(e) => {
-            if ($timeleft == 0 && !$eventEnded) return
             e.preventDefault()
             // if (e.ctrlKey) {
             let wm = pixiApp.editorNode.toWorld(
@@ -331,14 +381,15 @@
                 pixiApp.canvasSize()
             )
             let prevZoom = pixiApp.editorNode.zoom()
-            pixiApp.editorNode.zoomLevel += e.deltaY > 0 ? -1 : 1
-            pixiApp.editorNode.zoomLevel = Math.min(
+            pixiApp.editorNode.targetZoomLevel += e.deltaY > 0 ? -1 : 1
+
+            pixiApp.editorNode.targetZoomLevel = Math.min(
                 MIN_ZOOM,
-                Math.max(MAX_ZOOM, pixiApp.editorNode.zoomLevel)
+                Math.max(MAX_ZOOM, pixiApp.editorNode.targetZoomLevel)
             )
             let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
-            pixiApp.editorNode.cameraPos = wm.plus(
-                pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
+            pixiApp.editorNode.targetCameraPos = wm.plus(
+                pixiApp.editorNode.targetCameraPos.minus(wm).div(zoomRatio)
             )
             // } else if (e.shiftKey) {
             //     pixiApp.editorNode.cameraPos.x += e.deltaY
@@ -352,7 +403,6 @@
         }}
         use:pinch
         on:pinch={({ detail }) => {
-            if ($timeleft == 0 && !$eventEnded) return
             pixiApp.dragging = null
             let prevZoom = pixiApp.editorNode.zoom()
 
@@ -362,7 +412,7 @@
                 }
             }
 
-            pixiApp.editorNode.zoomLevel =
+            pixiApp.editorNode.targetZoomLevel =
                 Math.log2(pixiApp.pinching.prevZoom * detail.scale) * 8
 
             let wm = pixiApp.editorNode.toWorld(
@@ -370,25 +420,21 @@
                 pixiApp.canvasSize()
             )
 
-            pixiApp.editorNode.zoomLevel = Math.min(
+            pixiApp.editorNode.targetZoomLevel = Math.min(
                 MIN_ZOOM,
-                Math.max(MAX_ZOOM, pixiApp.editorNode.zoomLevel)
+                Math.max(MAX_ZOOM, pixiApp.editorNode.targetZoomLevel)
             )
             let zoomRatio = pixiApp.editorNode.zoom() / prevZoom
-            pixiApp.editorNode.cameraPos = wm.plus(
-                pixiApp.editorNode.cameraPos.minus(wm).div(zoomRatio)
+            pixiApp.editorNode.targetCameraPos = wm.plus(
+                pixiApp.editorNode.targetCameraPos.minus(wm).div(zoomRatio)
             )
             // set editor position to local storage
             storePosState(pixiApp)
         }}
         on:pinchup={() => {
-            if ($timeleft == 0 && !$eventEnded) return
             pixiApp.pinching = null
         }}
         on:pointerup={(e) => {
-            if ($timeleft == 0 && !$eventEnded) return
-            if ($countingDown && !$eventEnded) return
-
             pixiApp.pinching = null
             pixiApp.mousePos = vec(e.pageX, e.pageY)
             if (currentMenu == EditorMenu.Delete) {
@@ -405,7 +451,7 @@
 
             if (pixiApp.editorNode.tooltip.currentObject)
                 pixiApp.editorNode.tooltip.currentObject.isHovering = false
-            if ($canEdit) {
+            if ($canEdit && false) {
                 if (
                     pixiApp.dragging == null ||
                     !pixiApp.draggingThresholdReached
@@ -457,21 +503,21 @@
         }}
     />
 
-    {#if $timeleft != null}
+    <!-- {#if $timeleft != null}
         <div class="end_countdown_container">
             <div
                 class="end_countdown"
                 style:color={$timeleft < 30000 ? "red" : "white"}
                 style:opacity={$timeleft != 0 ? 1 : 0}
             >
-                <!-- $eventEndWritable -->
+                
                 {new Date($timeleft).toISOString().substr(11, 8)}
             </div>
         </div>
-    {/if}
-    {#if $timeleft != 0 && !$eventEnded}
+    {/if} -->
+    <!-- {#if $timeleft != 0}
         <div class="playbutton">
-            <!-- svelte-ignore a11y-click-events-have-key-events -->
+            
             <img
                 src={pixiApp?.playingMusic
                     ? "/gd/editor/GJ_stopMusicBtn_001.png"
@@ -488,7 +534,7 @@
                 }}
             />
         </div>
-    {/if}
+    {/if} -->
 
     {#if settings.showObjInfo.enabled && $selectedObject != null && $timeleft != 0}
         <div class="obj_info">
@@ -567,7 +613,7 @@
         </div>
     {/if}
 
-    {#if $timeleft != 0 && $canEdit && $eventStartWritable != null && $countingDown != null && !$countingDown && !settings.hideMenu.enabled && !$eventEnded}
+    {#if $timeleft != 0 && $canEdit && $eventStartWritable != null && $countingDown != null && !$countingDown && !settings.hideMenu.enabled}
         <div class="menu">
             <div
                 class="side_panel menu_panel"
@@ -1237,7 +1283,7 @@
                 </button>
             {/if}
         </div>
-    {:else if $timeleft != 0 && !settings.hideMenu.enabled && $countingDown != null && $eventStartWritable != null && !$eventEnded}
+    {:else if $timeleft != 0 && !settings.hideMenu.enabled && $countingDown != null && $eventStartWritable != null}
         {#if $countingDown}
             {#if $streamLink != null}
                 <div class="livestream_link">
@@ -1293,7 +1339,7 @@
                     </div>
                 {/if}
             </div>
-        {:else if !$eventEnded}
+        {:else}
             <div class="login_requirement_message">
                 You must be signed in to help build the level!
                 <div style="transform:scale(0.8);opacity:0.5;margin-top:10px;">

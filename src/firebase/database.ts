@@ -23,6 +23,8 @@ import { settings } from "../settings/settings"
 import { writable } from "svelte/store"
 import { Howl } from "howler"
 
+import history from "../editor/history.json"
+
 export const CHUNK_SIZE = vec(20 * 30, 20 * 30)
 
 let canEditValue = false
@@ -45,7 +47,7 @@ onValue(ref(database, "editorState/deleteTimer"), (snapshot) => {
 })
 
 export async function getHistory() {
-    return (await get(ref(database, "history"))).val()
+    return history
 }
 
 export let streamLink = writable(null)
@@ -265,43 +267,43 @@ export class ChunkNode extends PIXI.Container {
 
             selectableSprite.interactive = true
 
-            selectableSprite.on("pointerup", () => {
-                if (canEditValue) {
-                    editorNode.deselectObject()
-                    objectNode.mainSprite().tint = 0x00ff00
-                    objectNode.detailSprite().tint = 0x00ff00
-                    objectNode.mainSprite().alpha = 1.0
-                    objectNode.detailSprite().alpha = 1.0
+            // selectableSprite.on("pointerup", () => {
+            //     if (canEditValue) {
+            //         editorNode.deselectObject()
+            //         objectNode.mainSprite().tint = 0x00ff00
+            //         objectNode.detailSprite().tint = 0x00ff00
+            //         objectNode.mainSprite().alpha = 1.0
+            //         objectNode.detailSprite().alpha = 1.0
 
-                    selectedObject.set(objectNode.getObjInfo())
+            //         selectedObject.set(objectNode.getObjInfo())
 
-                    const select_box = new PIXI.Graphics()
-                    select_box.name = "select_box"
-                    select_box.visible = !settings.disableObjectOutline.enabled
-                    let [width, height] = [
-                        objectNode.mainSprite().width,
-                        objectNode.mainSprite().height,
-                    ]
-                    select_box.clear()
-                    select_box
-                        .lineStyle(1, 0xff3075, 1)
-                        .drawRect(
-                            -width / 2 - 5,
-                            -height / 2 - 5,
-                            width + 10,
-                            height + 10
-                        )
+            //         const select_box = new PIXI.Graphics()
+            //         select_box.name = "select_box"
+            //         select_box.visible = !settings.disableObjectOutline.enabled
+            //         let [width, height] = [
+            //             objectNode.mainSprite().width,
+            //             objectNode.mainSprite().height,
+            //         ]
+            //         select_box.clear()
+            //         select_box
+            //             .lineStyle(1, 0xff3075, 1)
+            //             .drawRect(
+            //                 -width / 2 - 5,
+            //                 -height / 2 - 5,
+            //                 width + 10,
+            //                 height + 10
+            //             )
 
-                    //console.log(select_box, width, height)
+            //         //console.log(select_box, width, height)
 
-                    objectNode.addChild(select_box)
+            //         objectNode.addChild(select_box)
 
-                    editorNode.selectedObjectNode = objectNode
-                    selectableSprite.zOrder = editorNode.nextSelectionZ
-                    editorNode.nextSelectionZ -= 1
-                    editorNode.selectedObjectChunk = chunkName
-                }
-            })
+            //         editorNode.selectedObjectNode = objectNode
+            //         selectableSprite.zOrder = editorNode.nextSelectionZ
+            //         editorNode.nextSelectionZ -= 1
+            //         editorNode.selectedObjectChunk = chunkName
+            //     }
+            // })
         }
 
         this.removeObject = (key: string) => {

@@ -28,6 +28,8 @@ onValue(ref(database, "colors/GROUND_CHANGES"), (snapshot) => {
     GROUND_CHANGES = JSON.parse(changes)
 })
 
+const COLOR_FAC = 1.3
+
 // sort by x
 BG_CHANGES.sort((a, b) => a.x - b.x)
 GROUND_CHANGES.sort((a, b) => a.x - b.x)

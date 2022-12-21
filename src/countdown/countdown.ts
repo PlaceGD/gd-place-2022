@@ -30,10 +30,10 @@ onValue(ref(database, "editorState/eventStart"), (snapshot) => {
 // export let eventStartWritable = writable(true)
 
 
-export let eventEnded = writable(null)
-onValue(ref(database, "editorState/eventEnded"), (snapshot) => {
-    eventEnded.set(snapshot.val())
-})
+// export let eventEnded = writable(null)
+// onValue(ref(database, "editorState/eventEnded"), (snapshot) => {
+//     eventEnded.set(snapshot.val())
+// })
 
 export let countingDown = writable(null)
 setInterval(() => {

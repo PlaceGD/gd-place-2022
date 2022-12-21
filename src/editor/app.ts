@@ -5,7 +5,7 @@ import debounce from "lodash.debounce"
 
 import { vec, type Vector } from "../utils/vector"
 import { EditorNode, LEVEL_BOUNDS, type ObjectInfo } from "./nodes"
-import { map_range } from "../utils/math"
+import { clamp, map_range } from "../utils/math"
 
 import { Howl, Howler } from "howler"
 import { getColors } from "./colors"
@@ -30,8 +30,12 @@ export const toGradient = (cols: number[]): string => {
 
 export const DRAGGING_THRESHOLD = 40.0
 
-export const TIMELAPSE_MODE = false
-export const TIMELAPSE_SPEED = 1000
+const FOCUS_OBJECT = "" //"-NHBKrchHKzgdRajDLkT"
+
+const TIMELAPSE_CHUNK = (c) => {
+    const [x, y] = c.split(",").map((x) => parseInt(x))
+    return y < 3
+}
 // 1000 seconds per second
 
 export const TIMELAPSE_CHUNKS = new Set(["1,1", "1,2", "1,3", "1,4", "1,5"])
@@ -84,7 +88,12 @@ export function storePosState(app: EditorApp) {
         })
     )
 }
+const TIMELAPSE_START = 1668798001015
+const TIMELAPSE_OFFSET = 50 * 60 * 60 * 1000
+const SHOW_TIMELEFT = false
 
+export const TIMELAPSE_MODE = true
+export let TIMELAPSE_SPEED = 1300
 export class EditorApp {
     public dragging: null | { prevCamera: Vector; prevMouse: Vector } = null
     public pinching: null | { prevZoom: number } = null
@@ -115,6 +124,13 @@ export class EditorApp {
     }
 
     public app: PIXI.Application
+
+    // video stuff
+    public paused: boolean = true
+    public cinematic: boolean = false
+    public timelapseTime = TIMELAPSE_START + TIMELAPSE_OFFSET
+    public currentTime = TIMELAPSE_OFFSET
+    public zoomVel = 0
 
     constructor(public canvas: HTMLCanvasElement, editorPosition) {
         this.app = new PIXI.Application({
@@ -154,8 +170,13 @@ export class EditorApp {
         // }
         let history
         let historyIndex = 0
-        let timelapseTime
         let start
+
+        let obj_chunk = {}
+
+        let focus_object_time = Infinity
+        let focus_object_pos = vec(0, 0)
+
         if (TIMELAPSE_MODE) {
             // download history
             ;(async () => {
@@ -193,13 +214,84 @@ export class EditorApp {
                 //         offset += history[i].timeStamp - time
                 //     }
                 // }
-                console.log(history)
+                //console.log(history)
+                // find focus object
+                for (let i = 0; i < history.length; i++) {
+                    if (history[i].hasOwnProperty("placedObject")) {
+                        if (history[i].key == FOCUS_OBJECT) {
+                            focus_object_time = history[i].timeStamp
 
-                timelapseTime = 1668798001015
+                            const obj = GDObject.fromDatabaseString(
+                                history[i].placedObject
+                            )
+                            focus_object_pos = vec(obj.x, obj.y)
+                            break
+                        }
+                    }
+                }
+
+                if (focus_object_time == Infinity) {
+                    focus_object_time = history[history.length - 1].timeStamp + 100000000
+                }
+
                 start = Date.now()
 
                 //localStorage.setItem("historyCache", JSON.stringify(history))
             })()
+        }
+        const timeleftContainer = new PIXI.Container()
+
+        const timeleftText = new PIXI.Text("Time left:", {
+            fontFamily: "Fira Code, monospace",
+            fontSize: 64,
+            fill: 0xeeeeee,
+            align: "center",
+            dropShadow: true,
+            dropShadowColor: 0x000000,
+            dropShadowBlur: 5,
+            dropShadowDistance: 0,
+            dropShadowAlpha: 1.0,
+        })
+
+        timeleftText.anchor.set(0, 0)
+        timeleftText.position.set(20, 35)
+        timeleftText.alpha = 0.9
+        timeleftText.blendMode = PIXI.BLEND_MODES.ADD
+
+        const timeleftTimeText = new PIXI.Text("00:00:00", {
+            fontFamily: "Fira Code, monospace",
+            fontSize: 100,
+            fill: 0xffffff,
+            align: "left",
+            dropShadow: true,
+            dropShadowColor: 0x000000,
+            dropShadowBlur: 5,
+            dropShadowDistance: 0,
+            dropShadowAlpha: 1.0,
+        })
+
+        timeleftTimeText.anchor.set(0, 0)
+        timeleftTimeText.position.set(435, 20)
+
+        // add rect with rounded corners
+        const timeleftBackground = new PIXI.Graphics()
+        timeleftBackground.beginFill(0x000000, 0.7)
+        timeleftBackground.drawRoundedRect(
+            0,
+            0,
+            425 + timeleftTimeText.width + 50,
+            10 + timeleftTimeText.height + 40,
+            30
+        )
+        timeleftBackground.endFill()
+        timeleftBackground.position.set(-20, -20)
+        //timeleftBackground.filters = [new PIXI.filters.BlurFilter(10, 10)]
+        if (SHOW_TIMELEFT) {
+            timeleftContainer.addChild(timeleftBackground)
+            timeleftContainer.addChild(timeleftText)
+            timeleftContainer.addChild(timeleftTimeText)
+
+            this.app.stage.addChild(timeleftContainer)
         }
 
         this.musicLine = new PIXI.Graphics()
@@ -222,6 +314,9 @@ export class EditorApp {
         function easeInExpo(x: number): number {
             return x === 0 ? 0 : Math.pow(2, 10 * x - 10)
         }
+
+        let focus_ended = false
+        let focus_ended_full = false
 
         this.app.ticker.add(() => {
             if (this.editorNode.obamaEndingStart != null) {
@@ -285,44 +380,168 @@ export class EditorApp {
 
                 return
             }
-            if (TIMELAPSE_MODE) {
-                if (history && start && timelapseTime) {
-                    const time =
-                        (Date.now() - start) * TIMELAPSE_SPEED + timelapseTime
+            let focus_t =
+                (focus_object_time - TIMELAPSE_START - this.currentTime) /
+                TIMELAPSE_SPEED
+            let focus_d = easeInOutExpo(clamp(focus_t / 3000, 0, 1))
+            let pos_focus_d = easeInOutExpo(clamp(focus_t / 2500, 0, 1))
+            let zoom_focus_d = easeInOutExpo(clamp(focus_t / 3000 + 0.1, 0, 1))
+            if (focus_ended_full) {
+                this.editorNode.cameraPos = this.editorNode.targetCameraPos
 
-                    while (
-                        historyIndex < history.length &&
-                        history[historyIndex].timeStamp < time
+                this.editorNode.zoomLevel = this.editorNode.targetZoomLevel
+            } else {
+                this.editorNode.cameraPos = this.editorNode.targetCameraPos
+                    .mult(pos_focus_d)
+                    .plus(focus_object_pos.mult(1 - pos_focus_d))
+
+                this.editorNode.zoomLevel =
+                    this.editorNode.targetZoomLevel * zoom_focus_d +
+                    15 * (1 - zoom_focus_d)
+            }
+
+            //timeleftContainer.alpha = clamp(focus_t / 3000, 0, 1) ** 8
+
+            if (TIMELAPSE_MODE) {
+                if (history && start && this.timelapseTime) {
+                    if (
+                        history[historyIndex - 1]?.timeStamp >
+                        this.timelapseTime
                     ) {
-                        if (
-                            history[historyIndex].hasOwnProperty("placedObject")
+                        while (
+                            historyIndex > 0 &&
+                            history[historyIndex - 1]?.timeStamp >
+                                this.timelapseTime
                         ) {
-                            //console.log("placing object")
-                            const obj = GDObject.fromDatabaseString(
-                                history[historyIndex].placedObject
-                            )
-                            let chunkX = Math.floor(obj.x / CHUNK_SIZE.x)
-                            let chunkY = Math.floor(obj.y / CHUNK_SIZE.y)
-                            const chunk = `${chunkX},${chunkY}`
-                            //console.log(chunk)
-                            ;(
-                                this.editorNode.world.getChildByName(
-                                    chunk
-                                ) as ChunkNode
-                            ).addObject(history[historyIndex].key, obj)
-                        } else {
-                            //console.log("removing object")
-                            const obj_key = history[historyIndex].key
-                            // look for object all chunks
-                            const chunk = this.editorNode.world.getChildByName(
-                                history[historyIndex].chunk
-                            )
-                            if ((chunk as ChunkNode).getChildByName(obj_key))
-                                (chunk as ChunkNode).removeObject(obj_key)
+                            historyIndex--
+                            if (
+                                history[historyIndex].hasOwnProperty(
+                                    "placedObject"
+                                )
+                            ) {
+                                //console.log("removing object")
+                                const obj_key = history[historyIndex].key
+                                // look for object all chunks
+                                const cname =
+                                    obj_chunk[history[historyIndex].key][1]
+
+                                //if (!TIMELAPSE_CHUNK(cname)) continue
+
+                                const chunk =
+                                    this.editorNode.world.getChildByName(cname)
+                                if (
+                                    (chunk as ChunkNode).getChildByName(obj_key)
+                                )
+                                    (chunk as ChunkNode).removeObject(obj_key)
+                            } else {
+                                //console.log("placing object")
+                                const obj = GDObject.fromDatabaseString(
+                                    obj_chunk[history[historyIndex].key][0]
+                                )
+
+                                const chunk = history[historyIndex].chunk
+                                // if (!TIMELAPSE_CHUNK(chunk))
+                                //     continue
+                                //console.log(chunk)
+                                ;(
+                                    this.editorNode.world.getChildByName(
+                                        chunk
+                                    ) as ChunkNode
+                                ).addObject(history[historyIndex].key, obj)
+                            }
                         }
-                        historyIndex++
+                    } else {
+                        while (
+                            historyIndex < history.length &&
+                            history[historyIndex].timeStamp < this.timelapseTime
+                        ) {
+                            if (
+                                history[historyIndex].hasOwnProperty(
+                                    "placedObject"
+                                )
+                            ) {
+                                //console.log("placing object")
+                                const obj = GDObject.fromDatabaseString(
+                                    history[historyIndex].placedObject
+                                )
+                                let chunkX = Math.floor(obj.x / CHUNK_SIZE.x)
+                                let chunkY = Math.floor(obj.y / CHUNK_SIZE.y)
+                                const chunk = `${chunkX},${chunkY}`
+
+                                // if (!TIMELAPSE_CHUNK(chunk))
+                                //     continue
+                                //console.log(chunk)
+                                ;(
+                                    this.editorNode.world.getChildByName(
+                                        chunk
+                                    ) as ChunkNode
+                                ).addObject(history[historyIndex].key, obj)
+
+                                obj_chunk[history[historyIndex].key] = [
+                                    history[historyIndex].placedObject,
+                                    chunk,
+                                ]
+                            } else {
+                                //console.log("removing object")
+                                const obj_key = history[historyIndex].key
+                                // look for object all chunks
+                                // if (
+                                //     !TIMELAPSE_CHUNK(
+                                //         history[historyIndex].chunk
+                                //     )
+                                // )
+                                //     continue
+                                const chunk =
+                                    this.editorNode.world.getChildByName(
+                                        history[historyIndex].chunk
+                                    )
+                                if (
+                                    (chunk as ChunkNode).getChildByName(obj_key)
+                                )
+                                    (chunk as ChunkNode).removeObject(obj_key)
+                            }
+                            historyIndex++
+                        }
                     }
                 }
+                if (!this.paused) {
+                    this.currentTime +=
+                        this.app.ticker.elapsedMS * TIMELAPSE_SPEED
+                    if (focus_ended_full) {
+                        this.timelapseTime = TIMELAPSE_START + this.currentTime
+                    } else {
+                        this.timelapseTime =
+                            (TIMELAPSE_START + this.currentTime) * focus_d +
+                            (focus_object_time - 10) * (1 - focus_d)
+                    }
+
+                    if (focus_d == 0 && !focus_ended) {
+                        focus_ended = true
+                        setTimeout(() => {
+                            this.timelapseTime = focus_object_time + 10
+                            this.paused = true
+                            focus_ended_full = true
+                            this.editorNode.targetCameraPos =
+                                this.editorNode.cameraPos
+                            this.editorNode.targetZoomLevel =
+                                this.editorNode.zoomLevel
+                            this.cinematic = false
+                            TIMELAPSE_SPEED = 100
+                        }, 200)
+                    }
+                }
+
+                const full = 50 * 60 * 60 * 1000
+                const d = full - (this.timelapseTime - TIMELAPSE_START)
+                const hours = Math.floor(d / (60 * 60 * 1000))
+                const minutes = Math.floor((d / (60 * 1000)) % 60)
+                const seconds = Math.floor((d / 1000) % 60)
+                // pad with zeros
+                const h = hours.toString().padStart(2, "0")
+                const m = minutes.toString().padStart(2, "0")
+                const s = seconds.toString().padStart(2, "0")
+
+                timeleftTimeText.text = `${h}:${m}:${s}`
             }
             center.position.x = this.app.screen.width / 2
             center.position.y = this.app.screen.height / 2
@@ -336,13 +555,39 @@ export class EditorApp {
                 0
             )
             bgTiling.x = -this.editorNode.cameraPos.x / 6.0
+            if (this.cinematic) {
+                this.editorNode.cameraVel = this.mousePos
+                    .minus(
+                        vec(
+                            this.app.screen.width / 2,
+                            this.app.screen.height / 2
+                        )
+                    )
+                    .div(this.app.screen.height * 0.1 * this.editorNode.zoom())
+                    .mult(focus_d)
 
-            if (this.dragging != null && this.draggingThresholdReached) {
-                this.editorNode.cameraPos.x =
+                this.editorNode.targetCameraPos =
+                    this.editorNode.targetCameraPos.plus(
+                        vec(
+                            this.editorNode.cameraVel.x,
+                            -this.editorNode.cameraVel.y
+                        ).mult(this.app.ticker.elapsedMS / (1000 / 60))
+                    )
+
+                this.editorNode.targetZoomLevel +=
+                    (this.zoomVel * this.app.ticker.elapsedMS) / (1000 / 60)
+            }
+
+            if (
+                !this.cinematic &&
+                this.dragging != null &&
+                this.draggingThresholdReached
+            ) {
+                this.editorNode.targetCameraPos.x =
                     this.dragging.prevCamera.x -
                     (this.mousePos.x - this.dragging.prevMouse.x) /
                         this.editorNode.zoom()
-                this.editorNode.cameraPos.y =
+                this.editorNode.targetCameraPos.y =
                     this.dragging.prevCamera.y +
                     (this.mousePos.y - this.dragging.prevMouse.y) /
                         this.editorNode.zoom()
@@ -459,4 +704,18 @@ export function rgbToHexnum([r, g, b]: number[]) {
 
 export function hexNumToString(num: number) {
     return "#" + num.toString(16)
+}
+
+function easeInOutExpo(x: number): number {
+    return x === 0
+        ? 0
+        : x === 1
+        ? 1
+        : x < 0.5
+        ? Math.pow(2, 20 * x - 10) / 2
+        : (2 - Math.pow(2, -20 * x + 10)) / 2
+}
+
+function easeInExpo(x: number): number {
+    return x === 0 ? 0 : Math.pow(2, 10 * x - 10)
 }
